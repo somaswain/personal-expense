@@ -12,7 +12,7 @@ body{
 }
 
 .container{
-  max-width:500px;
+  max-width:900px;
   margin:auto;
 }
 
@@ -21,37 +21,34 @@ h1{
   margin-bottom:20px;
 }
 
-.summary{
-  margin-bottom:20px;
-}
-
-.card{
+.summary-card{
   background:white;
   padding:20px;
-  border-radius:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  border-radius:14px;
+  margin-bottom:20px;
   text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 
-.card p{
-  font-size:28px;
-  margin-top:10px;
+.summary-card p{
+  font-size:32px;
   font-weight:bold;
+  margin-top:10px;
 }
 
 form{
   background:white;
   padding:20px;
-  border-radius:12px;
+  border-radius:14px;
   display:flex;
   flex-direction:column;
   gap:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 
 input,select,button{
   padding:12px;
-  border-radius:8px;
+  border-radius:10px;
   border:1px solid #ddd;
   font-size:16px;
 }
@@ -59,43 +56,52 @@ input,select,button{
 button{
   background:black;
   color:white;
-  cursor:pointer;
   border:none;
+  cursor:pointer;
 }
 
-button:hover{
-  opacity:0.9;
-}
-
-.list-section{
-  margin-top:20px;
-}
-
-ul{
-  list-style:none;
-}
-
-li{
+.month-card{
   background:white;
-  padding:15px;
-  margin-top:10px;
-  border-radius:10px;
+  margin-top:20px;
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.month-header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  cursor:pointer;
 }
 
-.expense-info{
-  display:flex;
-  flex-direction:column;
+.section-title{
+  margin-top:18px;
+  margin-bottom:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:16px;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #eee;
+  text-align:left;
+  font-size:14px;
 }
 
 .delete-btn{
   background:red;
   color:white;
   border:none;
-  padding:8px 10px;
+  padding:6px 10px;
   border-radius:6px;
   cursor:pointer;
+}
+
+.hidden{
+  display:none;
 }
