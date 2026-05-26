@@ -10,39 +10,47 @@
 <body>
 
 <div class="container">
+
   <h1>Expense Tracker</h1>
 
-  <div class="summary-card">
-    <h2>Total Expenses</h2>
-    <p id="totalAmount">₹0</p>
+  <div class="add-expense-wrapper">
+    <button class="dropdown-btn" onclick="toggleAddExpense()">
+      + Add Expense
+    </button>
+
+    <div id="expenseFormContainer" class="hidden">
+      <form id="expenseForm">
+
+        <input type="number" id="amount" placeholder="Amount" required>
+
+        <select id="person" required>
+          <option value="">Select Tag</option>
+          <option value="Main">Main</option>
+          <option value="Self">Self</option>
+        </select>
+
+        <select id="category" required>
+          <option value="">Category</option>
+          <option>Food</option>
+          <option>Travel</option>
+          <option>Shopping</option>
+          <option>Bills</option>
+          <option>Entertainment</option>
+          <option>Other</option>
+        </select>
+
+        <input type="date" id="date" required>
+
+        <input type="text" id="note" placeholder="Note">
+
+        <button type="submit">Save Expense</button>
+
+      </form>
+    </div>
   </div>
 
-  <form id="expenseForm">
-    <input type="number" id="amount" placeholder="Amount" required>
-
-    <select id="person" required>
-      <option value="">Select Tag</option>
-      <option value="Self">Self</option>
-      <option value="Mom">Mom</option>
-    </select>
-
-    <select id="category" required>
-      <option value="">Category</option>
-      <option>Food</option>
-      <option>Travel</option>
-      <option>Shopping</option>
-      <option>Bills</option>
-      <option>Entertainment</option>
-      <option>Other</option>
-    </select>
-
-    <input type="text" id="note" placeholder="Note">
-    <input type="date" id="date" required>
-
-    <button type="submit">Add Expense</button>
-  </form>
-
   <div id="monthlyContainer"></div>
+
 </div>
 
 <script src="script.js"></script>
