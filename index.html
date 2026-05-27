@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Expense Tracker</title>
+  <title>Expense Tracker v10</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -31,6 +31,12 @@
     </div>
   </header>
 
+  <!-- Controls -->
+  <div class="controls">
+    <button onclick="expandAll()" class="control-btn">Expand All</button>
+    <button onclick="collapseAll()" class="control-btn">Collapse All</button>
+  </div>
+
   <!-- Success Toast -->
   <div id="successToast" class="toast toast-success hidden">
     <span class="toast-icon">✦</span> Expense saved!
@@ -47,7 +53,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Amount (₹)</label>
-            <input type="number" id="amount" placeholder="0" required>
+            <input type="number" id="amount" placeholder="0" required inputmode="decimal">
           </div>
           <div class="form-group">
             <label>Tag</label>
@@ -91,23 +97,18 @@
   <!-- Monthly list -->
   <div id="monthlyContainer"></div>
 
-  <!-- Global Controls -->
-  <div class="global-controls" style="margin: 20px 0 15px; display: flex; gap: 10px; justify-content: center;">
-    <button onclick="expandAll()" class="control-btn">Expand All</button>
-    <button onclick="collapseAll()" class="control-btn">Collapse All</button>
-  </div>
-
   <!-- How to Use -->
-  <div class="help-section" style="margin-top: 20px; padding: 16px; background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 13px; color: var(--text-secondary);">
+  <div class="help-section">
     <strong>How to Use:</strong>
-    <ol style="margin-top: 8px; padding-left: 18px; line-height: 1.5;">
+    <ol>
       <li>Tap <strong>+ Add Expense</strong> to log new entry.</li>
       <li>Click month headers to expand/collapse.</li>
       <li>Tap salary tag to set monthly income.</li>
-      <li>Use ⋯ on expenses for edit/delete. Use month delete for bulk.</li>
+      <li>Use ⋯ on expenses for edit/delete. Use 🗑️ to delete entire month.</li>
+      <li>Use Expand All / Collapse All above months.</li>
       <li>Backup via top icons (export/import JSON).</li>
     </ol>
-    <div style="margin-top: 12px; text-align: center; font-size: 11px; color: var(--text-muted);">v9.0 • crafted by somaswain</div>
+    <div class="version">v10.0 • crafted by somaswain</div>
   </div>
 </div>
 
@@ -118,7 +119,7 @@
       <h3>Salary — <span id="modalMonthLabel"></span></h3>
       <button class="modal-close" onclick="closeSalaryModal()">✕</button>
     </div>
-    <input type="number" id="salaryInput" placeholder="Enter amount">
+    <input type="number" id="salaryInput" placeholder="Enter amount" inputmode="decimal">
     <div class="modal-buttons">
       <button onclick="saveSalary()" class="save-salary-btn">Save</button>
       <button onclick="closeSalaryModal()" class="cancel-salary-btn">Cancel</button>

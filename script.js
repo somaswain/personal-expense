@@ -4,12 +4,8 @@ let salaries   = JSON.parse(localStorage.getItem("salaries"))  || {};
 let editingId  = null;
 let formOpen   = false;
 
-// Track which expense's menu is open, stored OUTSIDE of DOM
+// Track which expense's menu is open
 let menuOpenForId = null;
-
-// After saving, auto-expand these sections
-let pendingExpandMonth   = null;
-let pendingExpandSection = null;
 
 // ── Persistence ──
 function saveExpenses(){ localStorage.setItem("expenses", JSON.stringify(expenses)); }
@@ -25,13 +21,18 @@ function toggleAddExpense(){
 }
 
 // ── Toast ──
-function showToast(){
+function showToast(message = "Expense saved!"){
   const t = document.getElementById("successToast");
+  t.innerHTML = `<span class="toast-icon">✦</span> ${message}`;
   t.classList.remove("hidden");
   setTimeout(() => {
     t.style.opacity = "0";
-    setTimeout(() => { t.classList.add("hidden"); t.style.opacity = "1"; }, 350);
-  }, 1600);
+    setTimeout(() => { 
+      t.classList.add("hidden"); 
+      t.style.opacity = "1"; 
+      t.innerHTML = `<span class="toast-icon">✦</span> Expense saved!`;
+    }, 350);
+  }, 1800);
 }
 
 // ── Date input colour ──
@@ -61,7 +62,7 @@ function fmt(dateStr){
   return d.toLocaleDateString("en-IN", { day:"2-digit", month:"short" });
 }
 
-// ── Table (no category, options icon) ──
+// ── Table ──
 function createTable(data){
   if(!data.length) return `<p class="no-expenses">No expenses yet</p>`;
 
@@ -105,7 +106,7 @@ function createTable(data){
   `;
 }
 
-// ── Inline menu toggle (no floating, survives re-render) ──
+// ── Inline menu ──
 function toggleMenu(id, btn, event){
   event.stopPropagation();
   if(menuOpenForId === id){
@@ -113,8 +114,6 @@ function toggleMenu(id, btn, event){
   } else {
     menuOpenForId = id;
   }
-  // Re-render just toggling visibility without full re-render
-  // Update all menu rows in DOM directly
   document.querySelectorAll("tr[id^='menu-row-']").forEach(row => {
     const rowId = row.id.replace("menu-row-", "");
     row.classList.toggle("hidden", rowId !== menuOpenForId);
@@ -143,80 +142,58 @@ function saveSalary(){
   salaries[salaryTargetMonth] = val;
   saveSalaries();
   closeSalaryModal();
-  // Preserve open states
-  renderExpenses();
+  renderExpenses(); // Preserve open states via improved render
 }
 
-// ── Global expand/collapse ──
+// ── Expand / Collapse All ──
 function expandAll(){
-  document.querySelectorAll('.month-card > div[id]').forEach(el => {
-    if(el.classList.contains('hidden')) el.classList.remove('hidden');
-  });
-  document.querySelectorAll('.section-header + div').forEach(el => {
-    if(el.classList.contains('hidden')) el.classList.remove('hidden');
-  });
-  // Update chevrons
-  document.querySelectorAll('.chevron').forEach(chev => {
-    chev.textContent = '▴';
-    chev.classList.add('open');
+  document.querySelectorAll('.month-card [id]').forEach(el => {
+    if(el.id && !el.classList.contains('hidden')) return;
+    if (el.id.includes('-main') || el.id.includes('-self') || /^[A-Za-z]+202[0-9]+$/.test(el.id)) {
+      el.classList.remove('hidden');
+      const chev = document.getElementById('chev-' + el.id);
+      if(chev) {
+        chev.textContent = '▴';
+        chev.classList.add('open');
+      }
+    }
   });
 }
 
 function collapseAll(){
-  document.querySelectorAll('.month-card > div[id]').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.section-header + div').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.chevron').forEach(chev => {
-    chev.textContent = '▾';
-    chev.classList.remove('open');
+  document.querySelectorAll('.month-card [id]').forEach(el => {
+    if (el.id.includes('-main') || el.id.includes('-self') || /^[A-Za-z]+202[0-9]+$/.test(el.id)) {
+      el.classList.add('hidden');
+      const chev = document.getElementById('chev-' + el.id);
+      if(chev) {
+        chev.textContent = '▾';
+        chev.classList.remove('open');
+      }
+    }
   });
 }
 
-// ── Delete entire month ──
+// ── Month Delete ──
 function deleteMonth(month){
-  if(!confirm(`Delete ALL expenses for ${month}?\nThis cannot be undone.`)) return;
+  if(!confirm(`Delete ALL expenses for ${month}? This cannot be undone.`)) return;
   
   const monthStart = new Date(month + " 1");
-  expenses = expenses.filter(e => {
-    const d = new Date(e.date);
-    const eMonth = d.toLocaleString("default", { month:"long", year:"numeric" });
-    return eMonth !== month;
+  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+  
+  expenses = expenses.filter(exp => {
+    const expDate = new Date(exp.date);
+    return !(expDate >= monthStart && expDate <= monthEnd);
   });
   
   delete salaries[month];
   saveExpenses();
   saveSalaries();
-  
-  // Show success toast with red theme
-  showDeleteToast();
+  showToast(`✅ ${month} deleted successfully`);
   renderExpenses();
 }
 
-function showDeleteToast(){
-  const t = document.createElement('div');
-  t.className = 'toast toast-delete';
-  t.innerHTML = `<span class="toast-icon">🗑</span> Month deleted!`;
-  t.style.position = 'fixed';
-  t.style.top = '18px';
-  t.style.left = '50%';
-  t.style.transform = 'translateX(-50%)';
-  t.style.padding = '11px 20px';
-  t.style.borderRadius = '40px';
-  t.style.fontSize = '14px';
-  t.style.fontWeight = '500';
-  t.style.background = '#C0392B';
-  t.style.color = 'white';
-  t.style.zIndex = '9999';
-  t.style.boxShadow = 'var(--shadow-md)';
-  document.body.appendChild(t);
-  
-  setTimeout(() => {
-    t.style.opacity = '0';
-    setTimeout(() => t.remove(), 350);
-  }, 1600);
-}
-
 // ── Render ──
-function renderExpenses(autoExpandMonth, autoExpandSection){
+function renderExpenses(){
   const container = document.getElementById("monthlyContainer");
   container.innerHTML = "";
 
@@ -224,7 +201,7 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
   const months  = sortedMonths(grouped);
 
   months.forEach(month => {
-    const all  = grouped[month];
+    const all  = grouped[month] || [];
     const main = all.filter(e => e.person === "Main");
     const self = all.filter(e => e.person === "Self");
     const mainTotal  = main.reduce((s,e) => s + Number(e.amount), 0);
@@ -236,8 +213,8 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const remaining = salary !== undefined ? salary - grandTotal : null;
     const hasSalary = salary !== undefined;
 
-    // For preserve state: better to keep current open state if possible, but for simplicity use autoExpand for now
-    const monthShouldOpen = (autoExpandMonth === month);
+    const card = document.createElement("div");
+    card.className = "month-card";
 
     const remainingHTML = remaining !== null ? `
       <div class="divider"></div>
@@ -253,36 +230,21 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
       </div>
     ` : "";
 
-    const card = document.createElement("div");
-    card.className = "month-card";
-
-    // Month body: open if it's the auto-expand target
-    const monthBodyClass = monthShouldOpen ? "" : "hidden";
-    const chevText = monthShouldOpen ? "▴" : "▾";
-    const chevClass = monthShouldOpen ? "chevron open" : "chevron";
-
-    // Sub-sections: open if matches autoExpandSection
-    const mainOpen = monthShouldOpen && autoExpandSection === "main";
-    const selfOpen = monthShouldOpen && autoExpandSection === "self";
-
     card.innerHTML = `
       <div class="month-header" onclick="toggleSection('${monthId}')">
         <div class="month-header-left">
           <span class="month-title">${month}</span>
-          <button
-            class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}"
-            onclick="openSalaryModal('${month}', event)">
+          <button class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}" onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
           </button>
-          <button onclick="deleteMonth('${month}'); event.stopPropagation();" 
-                  style="margin-left: 8px; padding: 3px 8px; font-size: 11px; background: #fee2e2; color: #c0392b; border: 1px solid #fecaca; border-radius: 12px; cursor: pointer;">
-            🗑
+          <button onclick="deleteMonth('${month}'); event.stopPropagation();" class="delete-month-btn" title="Delete entire month">
+            🗑️
           </button>
         </div>
-        <span class="${chevClass}" id="chev-${monthId}">${chevText}</span>
+        <span class="chevron" id="chev-${monthId}">▾</span>
       </div>
 
-      <div id="${monthId}" class="${monthBodyClass}">
+      <div id="${monthId}" class="hidden">
         <div class="summary-block">
           <div class="total-row"><span>Main</span><span>₹${mainTotal.toLocaleString()}</span></div>
           <div class="total-row"><span>Self</span><span>₹${selfTotal.toLocaleString()}</span></div>
@@ -291,17 +253,17 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
 
         <div class="section-header" onclick="toggleSection('${monthId}-main', event)">
           <span>Main Expenses</span>
-          <span class="${mainOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-main">${mainOpen ? '▴' : '▾'}</span>
+          <span class="chevron" id="chev-${monthId}-main">▾</span>
         </div>
-        <div id="${monthId}-main" class="${mainOpen ? '' : 'hidden'}">
+        <div id="${monthId}-main" class="hidden">
           ${createTable(main)}
         </div>
 
         <div class="section-header" onclick="toggleSection('${monthId}-self', event)">
           <span>Self Expenses</span>
-          <span class="${selfOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-self">${selfOpen ? '▴' : '▾'}</span>
+          <span class="chevron" id="chev-${monthId}-self">▾</span>
         </div>
-        <div id="${monthId}-self" class="${selfOpen ? '' : 'hidden'}">
+        <div id="${monthId}-self" class="hidden">
           ${createTable(self)}
         </div>
       </div>
@@ -309,6 +271,10 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
 
     container.appendChild(card);
   });
+
+  if(months.length === 0){
+    container.innerHTML = `<p class="no-expenses" style="text-align:center; padding:40px 20px;">No expenses yet. Add some above!</p>`;
+  }
 }
 
 function toggleSection(id, event){
@@ -379,27 +345,24 @@ document.getElementById("expenseForm").addEventListener("submit", (e) => {
 
   saveExpenses();
 
-  // ── Change 3: Determine which month+section to auto-expand ──
   const d         = new Date(dateVal + "T00:00:00");
   const monthName = d.toLocaleString("default", { month:"long", year:"numeric" });
-  const section   = personVal === "Main" ? "main" : "self";
 
   menuOpenForId = null;
-  renderExpenses(monthName, section);
+  renderExpenses();
 
   e.target.reset();
   dateInput.classList.remove("has-value");
 
   if(isNew) showToast();
 
-  // Close form
   document.getElementById("expenseFormContainer").classList.add("hidden");
   formOpen = false;
   document.getElementById("addBtnIcon").textContent = "+";
   document.getElementById("addExpenseBtn").style.borderRadius = "16px";
 });
 
-// ── Export ──
+// ── Export / Import ──
 function exportData(){
   const payload = { exportedAt: new Date().toISOString(), expenses, salaries };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
@@ -423,19 +386,17 @@ function importData(event){
     try {
       const data = JSON.parse(ev.target.result);
       if(!Array.isArray(data.expenses)){ alert("Invalid backup file."); return; }
-      if(!confirm(`Import ${data.expenses.length} expense(s)?\nMerges with existing data (duplicates skipped).`)) return;
+      if(!confirm(`Import ${data.expenses.length} expense(s)?`)) return;
       const existingIds = new Set(expenses.map(x => x.id));
       const newOnes = data.expenses.filter(x => !existingIds.has(x.id));
       expenses = [...expenses, ...newOnes];
-      if(data.salaries && typeof data.salaries === "object"){
-        salaries = { ...salaries, ...data.salaries };
-      }
+      if(data.salaries) salaries = {...salaries, ...data.salaries};
       saveExpenses();
       saveSalaries();
       renderExpenses();
-      alert(`✅ Imported ${newOnes.length} new expense(s)!`);
+      showToast(`✅ Imported ${newOnes.length} expenses!`);
     } catch(err){
-      alert("Failed to read file. Make sure it's a valid backup JSON.");
+      alert("Failed to read file.");
     }
   };
   reader.readAsText(file);
