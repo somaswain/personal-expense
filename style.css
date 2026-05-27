@@ -33,9 +33,9 @@ body {
   background: var(--bg);
   font-family: var(--font-body);
   color: var(--text-primary);
-  padding: 16px 14px 80px;
+  padding: 16px 14px 40px;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .container {
@@ -65,7 +65,7 @@ h1 {
 /* ── Fix 4: tagline visible colour ── */
 .tagline {
   font-size: 12px;
-  color: var(--text-secondary);   /* was --text-muted which blended into bg */
+  color: var(--text-secondary);
   font-weight: 400;
   letter-spacing: 0.04em;
   margin-top: 4px;
@@ -166,7 +166,6 @@ form {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  /* Prevent any child from overflowing */
   min-width: 0;
 }
 
@@ -188,7 +187,6 @@ input, select {
   background: var(--bg);
   transition: border-color 0.15s ease;
   width: 100%;
-  /* Fix 2: prevent date/input overflow */
   min-width: 0;
   max-width: 100%;
 }
@@ -204,10 +202,8 @@ input::placeholder { color: var(--text-muted); }
 /* Fix 2: Date field — constrain & fix overflow */
 input[type="date"] {
   color: var(--text-muted);
-  /* Remove appearance so it respects width */
   -webkit-appearance: none;
   appearance: none;
-  /* Shrink the calendar icon padding on webkit */
   padding-right: 8px;
 }
 
@@ -363,9 +359,6 @@ input[type="date"].has-value { color: var(--text-primary); }
   border-collapse: collapse;
   margin-top: 8px;
   table-layout: fixed;
-  max-width: 100%;
-  overflow-x: auto;
-  display: block;
 }
 
 .expense-table th {
@@ -380,15 +373,15 @@ input[type="date"].has-value { color: var(--text-primary); }
   overflow: hidden;
 }
 
-/* Column widths - responsive */
+/* Column widths */
 .expense-table th:nth-child(1),
-.expense-table td:nth-child(1) { width: 30%; }
+.expense-table td:nth-child(1) { width: 28%; }
 .expense-table th:nth-child(2),
-.expense-table td:nth-child(2) { width: 25%; }
+.expense-table td:nth-child(2) { width: 22%; }
 .expense-table th:nth-child(3),
-.expense-table td:nth-child(3) { width: 35%; }
+.expense-table td:nth-child(3) { width: auto; }
 .expense-table th:nth-child(4),
-.expense-table td:nth-child(4) { width: 10%; min-width: 40px; }
+.expense-table td:nth-child(4) { width: 36px; }
 
 .expense-table td {
   padding: 10px 8px;
@@ -589,3 +582,27 @@ input[type="date"].has-value { color: var(--text-primary); }
 }
 
 .hidden { display: none !important; }
+
+/* v8 improvements */
+.help-section {
+  margin-top: 30px;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.help-section ol {
+  margin-top: 8px;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
+.version {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}

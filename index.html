@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Expense Tracker v8</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -47,7 +47,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Amount (₹)</label>
-            <input type="number" id="amount" placeholder="0" required>
+            <input type="number" id="amount" placeholder="0" required inputmode="decimal">
           </div>
           <div class="form-group">
             <label>Tag</label>
@@ -101,7 +101,7 @@
       <li>Use ⋯ on expenses for edit/delete.</li>
       <li>Backup via top icons (export/import JSON).</li>
     </ol>
-    <div style="margin-top: 12px; text-align: center; font-size: 11px; color: var(--text-muted);">v7.0 • crafted by somaswain</div>
+    <div style="margin-top: 12px; text-align: center; font-size: 11px; color: var(--text-muted);">v8.0 • crafted by somaswain</div>
   </div>
 </div>
 
@@ -112,7 +112,7 @@
       <h3>Salary — <span id="modalMonthLabel"></span></h3>
       <button class="modal-close" onclick="closeSalaryModal()">✕</button>
     </div>
-    <input type="number" id="salaryInput" placeholder="Enter amount">
+    <input type="number" id="salaryInput" placeholder="Enter amount" inputmode="decimal">
     <div class="modal-buttons">
       <button onclick="saveSalary()" class="save-salary-btn">Save</button>
       <button onclick="closeSalaryModal()" class="cancel-salary-btn">Cancel</button>
