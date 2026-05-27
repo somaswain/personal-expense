@@ -4,69 +4,119 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
 
-  <h1>Expense Tracker</h1>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <div>
+        <h1>Expense Tracker</h1>
+        <p class="tagline">crafted by somaswain</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="exportData()" title="Export data">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="icon-btn" onclick="triggerImport()" title="Import data">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
+    </div>
+  </header>
 
-  <!-- Green success toast -->
-  <div id="successToast" class="success-toast hidden">
-    ✅ Expense added successfully!
+  <!-- Success Toast -->
+  <div id="successToast" class="toast toast-success hidden">
+    <span class="toast-icon">✦</span> Expense saved!
   </div>
 
+  <!-- Add Expense -->
   <div class="add-expense-wrapper">
-    <button class="dropdown-btn" id="addExpenseBtn" onclick="toggleAddExpense()">
-      + Add Expense
+    <button class="add-btn" id="addExpenseBtn" onclick="toggleAddExpense()">
+      <span id="addBtnIcon">+</span> Add Expense
     </button>
 
-    <div id="expenseFormContainer" class="hidden">
+    <div id="expenseFormContainer" class="form-panel hidden">
       <form id="expenseForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="amount" placeholder="0" required>
+          </div>
+          <div class="form-group">
+            <label>Tag</label>
+            <select id="person" required>
+              <option value="">Select</option>
+              <option value="Main">Main</option>
+              <option value="Self">Self</option>
+            </select>
+          </div>
+        </div>
 
-        <input type="number" id="amount" placeholder="Amount" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="category" required>
+              <option value="">Select</option>
+              <option>Food</option>
+              <option>Travel</option>
+              <option>Shopping</option>
+              <option>Bills</option>
+              <option>Entertainment</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="date" required>
+          </div>
+        </div>
 
-        <select id="person" required>
-          <option value="">Select Tag</option>
-          <option value="Main">Main</option>
-          <option value="Self">Self</option>
-        </select>
+        <div class="form-group">
+          <label>Note</label>
+          <input type="text" id="note" placeholder="Optional note…">
+        </div>
 
-        <select id="category" required>
-          <option value="">Category</option>
-          <option>Food</option>
-          <option>Travel</option>
-          <option>Shopping</option>
-          <option>Bills</option>
-          <option>Entertainment</option>
-          <option>Other</option>
-        </select>
-
-        <input type="date" id="date" placeholder="DD/MM/YYYY" required>
-
-        <input type="text" id="note" placeholder="Note">
-
-        <button type="submit">Save Expense</button>
-
+        <button type="submit" class="save-btn">Save Expense</button>
       </form>
     </div>
   </div>
 
+  <!-- Monthly list -->
   <div id="monthlyContainer"></div>
-
 </div>
 
 <!-- Salary Modal -->
 <div id="salaryModal" class="modal-overlay hidden">
   <div class="modal-box">
-    <h3>Add Salary for <span id="modalMonthLabel"></span></h3>
-    <input type="number" id="salaryInput" placeholder="Enter salary amount">
+    <div class="modal-header">
+      <h3>Salary — <span id="modalMonthLabel"></span></h3>
+      <button class="modal-close" onclick="closeSalaryModal()">✕</button>
+    </div>
+    <input type="number" id="salaryInput" placeholder="Enter amount">
     <div class="modal-buttons">
       <button onclick="saveSalary()" class="save-salary-btn">Save</button>
       <button onclick="closeSalaryModal()" class="cancel-salary-btn">Cancel</button>
     </div>
   </div>
+</div>
+
+<!-- Options Menu (floating) -->
+<div id="optionsMenu" class="options-menu hidden">
+  <button onclick="handleEdit()" class="opt-edit">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Edit
+  </button>
+  <button onclick="handleDelete()" class="opt-delete">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    Delete
+  </button>
 </div>
 
 <script src="script.js"></script>
