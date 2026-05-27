@@ -35,38 +35,11 @@ body {
   color: var(--text-primary);
   padding: 16px 14px 40px;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 .container {
   max-width: 540px;
   margin: 0 auto;
-}
-
-/* Controls */
-.controls {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.control-btn {
-  flex: 1;
-  padding: 10px 14px;
-  background: var(--surface);
-  color: var(--text-secondary);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.control-btn:hover {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
 }
 
 /* ── Header ── */
@@ -87,9 +60,10 @@ h1 {
   line-height: 1.1;
 }
 
+/* ── Fix 4: tagline visible colour ── */
 .tagline {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-secondary);   /* was --text-muted which blended into bg */
   font-weight: 400;
   letter-spacing: 0.04em;
   margin-top: 4px;
@@ -190,6 +164,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* Prevent any child from overflowing */
   min-width: 0;
 }
 
@@ -211,6 +186,7 @@ input, select {
   background: var(--bg);
   transition: border-color 0.15s ease;
   width: 100%;
+  /* Fix 2: prevent date/input overflow */
   min-width: 0;
   max-width: 100%;
 }
@@ -223,10 +199,13 @@ input:focus, select:focus {
 
 input::placeholder { color: var(--text-muted); }
 
+/* Fix 2: Date field — constrain & fix overflow */
 input[type="date"] {
   color: var(--text-muted);
+  /* Remove appearance so it respects width */
   -webkit-appearance: none;
   appearance: none;
+  /* Shrink the calendar icon padding on webkit */
   padding-right: 8px;
 }
 
@@ -270,7 +249,7 @@ input[type="date"].has-value { color: var(--text-primary); }
 .month-header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -302,22 +281,6 @@ input[type="date"].has-value { color: var(--text-primary); }
   background: var(--amber-bg);
   border-color: #FCD34D;
   color: var(--amber);
-}
-
-.delete-month-btn {
-  background: #fee2e2;
-  color: var(--red);
-  border: 1px solid #fecaca;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.delete-month-btn:hover {
-  background: var(--red);
-  color: white;
 }
 
 .chevron {
@@ -397,7 +360,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
-  table-layout: fixed;
+  table-layout: fixed;   /* Fix 2: prevents table from expanding beyond card */
 }
 
 .expense-table th {
@@ -409,12 +372,18 @@ input[type="date"].has-value { color: var(--text-primary); }
   letter-spacing: 0.06em;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
 }
 
-.expense-table th:nth-child(1), .expense-table td:nth-child(1) { width: 28%; }
-.expense-table th:nth-child(2), .expense-table td:nth-child(2) { width: 22%; }
-.expense-table th:nth-child(3), .expense-table td:nth-child(3) { width: auto; }
-.expense-table th:nth-child(4), .expense-table td:nth-child(4) { width: 36px; }
+/* Column widths */
+.expense-table th:nth-child(1),
+.expense-table td:nth-child(1) { width: 28%; }
+.expense-table th:nth-child(2),
+.expense-table td:nth-child(2) { width: 22%; }
+.expense-table th:nth-child(3),
+.expense-table td:nth-child(3) { width: auto; }
+.expense-table th:nth-child(4),
+.expense-table td:nth-child(4) { width: 36px; }
 
 .expense-table td {
   padding: 10px 8px;
@@ -428,11 +397,34 @@ input[type="date"].has-value { color: var(--text-primary); }
 .expense-table tbody tr { transition: background 0.1s ease; }
 .expense-table tbody tr:hover td { background: var(--surface2); }
 
-.td-amount { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.td-date { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
-.td-note { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.td-options { text-align: right; padding-right: 4px; }
+.td-amount {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
+.td-date {
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.td-note {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-options {
+  text-align: right;
+  padding-right: 4px;
+}
+
+/* ── Options trigger ── */
 .options-trigger {
   background: none;
   border: none;
@@ -450,6 +442,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-primary);
 }
 
+/* ── Fix 1: Inline menu row (replaces floating menu) ── */
 .inline-menu-cell {
   padding: 0 !important;
   border-bottom: 1px solid var(--border);
@@ -479,8 +472,12 @@ input[type="date"].has-value { color: var(--text-primary); }
 }
 
 .inline-menu button:hover { background: var(--border); }
+
 .inline-menu .opt-edit { border-right: 1px solid var(--border); }
+.inline-menu .opt-edit svg { stroke: var(--text-secondary); }
+
 .inline-menu .opt-delete { color: var(--red); }
+.inline-menu .opt-delete svg { stroke: var(--red); }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -586,23 +583,44 @@ input[type="date"].has-value { color: var(--text-primary); }
   font-style: italic;
 }
 
-.help-section {
-  margin-top: 30px;
-  padding: 16px;
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.help-section strong { color: var(--text-primary); }
-.help-section ol { margin-top: 8px; padding-left: 18px; line-height: 1.5; }
-.version {
-  margin-top: 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 .hidden { display: none !important; }
+
+/* v11 Additions */
+.controls {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.control-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.month-delete-btn {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.month-delete-btn:hover {
+  background: #fee;
+}

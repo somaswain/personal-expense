@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Expense Tracker v10</title>
+  <title>Expense Tracker v11</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -30,12 +30,6 @@
       </div>
     </div>
   </header>
-
-  <!-- Controls -->
-  <div class="controls">
-    <button onclick="expandAll()" class="control-btn">Expand All</button>
-    <button onclick="collapseAll()" class="control-btn">Collapse All</button>
-  </div>
 
   <!-- Success Toast -->
   <div id="successToast" class="toast toast-success hidden">
@@ -94,6 +88,12 @@
     </div>
   </div>
 
+  <!-- Expand / Collapse Controls -->
+  <div class="controls">
+    <button onclick="expandAll()" class="control-btn">Expand All</button>
+    <button onclick="collapseAll()" class="control-btn">Collapse All</button>
+  </div>
+
   <!-- Monthly list -->
   <div id="monthlyContainer"></div>
 
@@ -102,13 +102,12 @@
     <strong>How to Use:</strong>
     <ol>
       <li>Tap <strong>+ Add Expense</strong> to log new entry.</li>
-      <li>Click month headers to expand/collapse.</li>
-      <li>Tap salary tag to set monthly income.</li>
-      <li>Use ⋯ on expenses for edit/delete. Use 🗑️ to delete entire month.</li>
-      <li>Use Expand All / Collapse All above months.</li>
-      <li>Backup via top icons (export/import JSON).</li>
+      <li>Use Expand/Collapse buttons.</li>
+      <li>Tap month headers or salary tag.</li>
+      <li>Use ⋯ or 🗑️ for edit/delete.</li>
+      <li>Backup via top icons.</li>
     </ol>
-    <div class="version">v10.0 • crafted by somaswain</div>
+    <div class="version">v11.0 • crafted by somaswain</div>
   </div>
 </div>
 
