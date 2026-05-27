@@ -18,7 +18,6 @@
   --green-bg: #EDFAF3;
   --green-border: #A3DBBE;
   --red: #C0392B;
-  --red-bg: #FDF0EE;
   --amber: #92400E;
   --amber-bg: #FFFBEB;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
@@ -44,9 +43,7 @@ body {
 }
 
 /* ── Header ── */
-.app-header {
-  padding: 12px 0 20px;
-}
+.app-header { padding: 12px 0 20px; }
 
 .header-top {
   display: flex;
@@ -63,12 +60,14 @@ h1 {
   line-height: 1.1;
 }
 
+/* ── Fix 4: tagline visible colour ── */
 .tagline {
   font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 300;
+  color: var(--text-secondary);   /* was --text-muted which blended into bg */
+  font-weight: 400;
   letter-spacing: 0.04em;
-  margin-top: 3px;
+  margin-top: 4px;
+  font-style: italic;
 }
 
 .header-actions {
@@ -103,7 +102,7 @@ h1 {
   position: fixed;
   top: 18px;
   left: 50%;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateX(-50%);
   padding: 11px 20px;
   border-radius: 40px;
   font-size: 14px;
@@ -113,26 +112,14 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: slideDown 0.25s ease forwards;
   transition: opacity 0.35s ease;
 }
 
-.toast-success {
-  background: var(--green);
-  color: white;
-}
-
+.toast-success { background: var(--green); color: white; }
 .toast-icon { font-size: 12px; }
 
-@keyframes slideDown {
-  from { transform: translateX(-50%) translateY(-12px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
-}
-
 /* ── Add Expense ── */
-.add-expense-wrapper {
-  margin-bottom: 20px;
-}
+.add-expense-wrapper { margin-bottom: 20px; }
 
 .add-btn {
   width: 100%;
@@ -145,7 +132,6 @@ h1 {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  letter-spacing: 0.01em;
   transition: opacity 0.15s ease;
   box-shadow: 0 2px 8px rgba(26,25,22,0.25);
 }
@@ -178,6 +164,8 @@ form {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* Prevent any child from overflowing */
+  min-width: 0;
 }
 
 label {
@@ -197,8 +185,10 @@ input, select {
   color: var(--text-primary);
   background: var(--bg);
   transition: border-color 0.15s ease;
-  appearance: auto;
   width: 100%;
+  /* Fix 2: prevent date/input overflow */
+  min-width: 0;
+  max-width: 100%;
 }
 
 input:focus, select:focus {
@@ -209,8 +199,16 @@ input:focus, select:focus {
 
 input::placeholder { color: var(--text-muted); }
 
-/* Date placeholder */
-input[type="date"] { color: var(--text-muted); }
+/* Fix 2: Date field — constrain & fix overflow */
+input[type="date"] {
+  color: var(--text-muted);
+  /* Remove appearance so it respects width */
+  -webkit-appearance: none;
+  appearance: none;
+  /* Shrink the calendar icon padding on webkit */
+  padding-right: 8px;
+}
+
 input[type="date"].has-value { color: var(--text-primary); }
 
 .save-btn {
@@ -288,11 +286,9 @@ input[type="date"].has-value { color: var(--text-primary); }
 .chevron {
   color: var(--text-muted);
   font-size: 13px;
-  transition: transform 0.2s ease;
   flex-shrink: 0;
+  transition: none;
 }
-
-.chevron.open { transform: rotate(180deg); }
 
 /* ── Summary ── */
 .summary-block {
@@ -314,9 +310,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-primary);
 }
 
-.total-row span:last-child {
-  font-variant-numeric: tabular-nums;
-}
+.total-row span:last-child { font-variant-numeric: tabular-nums; }
 
 .divider {
   height: 1px;
@@ -366,6 +360,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
+  table-layout: fixed;   /* Fix 2: prevents table from expanding beyond card */
 }
 
 .expense-table th {
@@ -377,21 +372,29 @@ input[type="date"].has-value { color: var(--text-primary); }
   letter-spacing: 0.06em;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
 }
+
+/* Column widths */
+.expense-table th:nth-child(1),
+.expense-table td:nth-child(1) { width: 28%; }
+.expense-table th:nth-child(2),
+.expense-table td:nth-child(2) { width: 22%; }
+.expense-table th:nth-child(3),
+.expense-table td:nth-child(3) { width: auto; }
+.expense-table th:nth-child(4),
+.expense-table td:nth-child(4) { width: 36px; }
 
 .expense-table td {
   padding: 10px 8px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   font-size: 14px;
+  overflow: hidden;
 }
 
 .expense-table tr:last-child td { border-bottom: none; }
-
-.expense-table tbody tr {
-  transition: background 0.1s ease;
-}
-
+.expense-table tbody tr { transition: background 0.1s ease; }
 .expense-table tbody tr:hover td { background: var(--surface2); }
 
 .td-amount {
@@ -399,6 +402,8 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .td-date {
@@ -409,18 +414,17 @@ input[type="date"].has-value { color: var(--text-primary); }
 
 .td-note {
   color: var(--text-secondary);
-  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .td-options {
-  width: 32px;
   text-align: right;
+  padding-right: 4px;
 }
 
-/* ── Options (⋯) button ── */
+/* ── Options trigger ── */
 .options-trigger {
   background: none;
   border: none;
@@ -438,49 +442,42 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-primary);
 }
 
-/* ── Floating Options Menu ── */
-.options-menu {
-  position: fixed;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
-  z-index: 500;
-  overflow: hidden;
-  min-width: 130px;
-  animation: popIn 0.12s ease forwards;
+/* ── Fix 1: Inline menu row (replaces floating menu) ── */
+.inline-menu-cell {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border);
 }
 
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+.inline-menu {
+  display: flex;
+  gap: 0;
+  background: var(--surface2);
 }
 
-.options-menu button {
+.inline-menu button {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 11px 14px;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
   border: none;
   background: none;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  text-align: left;
-  color: var(--text-primary);
-  transition: background 0.1s ease;
+  color: var(--text-secondary);
+  transition: background 0.12s ease;
 }
 
-.options-menu button:hover { background: var(--surface2); }
+.inline-menu button:hover { background: var(--border); }
 
-.opt-delete { color: var(--red) !important; }
-.opt-delete svg { stroke: var(--red); }
+.inline-menu .opt-edit { border-right: 1px solid var(--border); }
+.inline-menu .opt-edit svg { stroke: var(--text-secondary); }
 
-.options-menu button + button {
-  border-top: 1px solid var(--border);
-}
+.inline-menu .opt-delete { color: var(--red); }
+.inline-menu .opt-delete svg { stroke: var(--red); }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -505,12 +502,6 @@ input[type="date"].has-value { color: var(--text-primary); }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: slideUp 0.22s ease forwards;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
 }
 
 .modal-header {
