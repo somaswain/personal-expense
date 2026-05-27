@@ -1,4 +1,15 @@
 
+function createDeleteMonthButton(month){
+  return `
+    <button
+      class="delete-month-btn"
+      onclick="event.stopPropagation(); deleteMonth('${month}')">
+      🗑 Delete Month
+    </button>
+  `;
+}
+
+
 function parseMonthYear(monthString){
   const [monthName, year] = monthString.split(" ");
   const monthIndex = new Date(Date.parse(monthName +" 1, 2024")).getMonth();

@@ -649,3 +649,40 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-muted);
   font-style: italic;
 }
+
+.delete-month-btn{
+  background:#dc2626;
+  color:white;
+  border:none;
+  border-radius:8px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-size:13px;
+  margin-left:8px;
+}
+
+.how-to-use{
+  margin-top:24px;
+  background:white;
+  padding:18px;
+  border-radius:16px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.guide-box h3{
+  margin-top:14px;
+  margin-bottom:6px;
+}
+
+.guide-box p{
+  color:#555;
+  line-height:1.5;
+}
+
+.app-footer{
+  margin-top:28px;
+  text-align:center;
+  color:#666;
+  font-size:14px;
+  padding-bottom:20px;
+}
