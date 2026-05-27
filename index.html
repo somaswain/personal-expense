@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,8 +12,13 @@
 
   <h1>Expense Tracker</h1>
 
+  <!-- Green success toast -->
+  <div id="successToast" class="success-toast hidden">
+    ✅ Expense added successfully!
+  </div>
+
   <div class="add-expense-wrapper">
-    <button class="dropdown-btn" onclick="toggleAddExpense()">
+    <button class="dropdown-btn" id="addExpenseBtn" onclick="toggleAddExpense()">
       + Add Expense
     </button>
 
@@ -39,7 +43,7 @@
           <option>Other</option>
         </select>
 
-        <input type="date" id="date" required>
+        <input type="date" id="date" placeholder="DD/MM/YYYY" required>
 
         <input type="text" id="note" placeholder="Note">
 
@@ -51,6 +55,18 @@
 
   <div id="monthlyContainer"></div>
 
+</div>
+
+<!-- Salary Modal -->
+<div id="salaryModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3>Add Salary for <span id="modalMonthLabel"></span></h3>
+    <input type="number" id="salaryInput" placeholder="Enter salary amount">
+    <div class="modal-buttons">
+      <button onclick="saveSalary()" class="save-salary-btn">Save</button>
+      <button onclick="closeSalaryModal()" class="cancel-salary-btn">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <script src="script.js"></script>
