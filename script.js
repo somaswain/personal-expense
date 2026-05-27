@@ -1,4 +1,16 @@
 
+
+function deleteMonthBtn(month){
+  return `
+    <button
+      class="delete-month-btn"
+      onclick="event.stopPropagation(); deleteMonth('${month}')"
+      title="Delete Entire Month">
+      🗑
+    </button>
+  `;
+}
+
 function createDeleteMonthButton(month){
   return `
     <button
