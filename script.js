@@ -3,13 +3,7 @@ let expenses   = JSON.parse(localStorage.getItem("expenses"))  || [];
 let salaries   = JSON.parse(localStorage.getItem("salaries"))  || {};
 let editingId  = null;
 let formOpen   = false;
-
 let menuOpenForId = null;
-
-// Track open states to preserve after operations
-let openMonths = new Set();
-let openMainSections = new Set();
-let openSelfSections = new Set();
 
 // ── Persistence ──
 function saveExpenses(){ localStorage.setItem("expenses", JSON.stringify(expenses)); }
@@ -67,8 +61,8 @@ function fmt(dateStr){
 }
 
 // ── Table ──
-function createTable(data){
-  if(!data.length) return `<p class="no-expenses">No expenses yet</p>`;
+function createTable(data, month){
+  if(!data.length) return `<p class="no-expenses">No expenses yet in this section</p>`;
 
   const rows = data.map(e => `
     <tr id="row-${e.id}">
@@ -76,7 +70,7 @@ function createTable(data){
       <td class="td-date">${fmt(e.date)}</td>
       <td class="td-note" title="${e.note || ''}">${e.note || '—'}</td>
       <td class="td-options">
-        <button class="options-trigger" onclick="toggleMenu('${e.id}', event)" aria-label="Options">⋯</button>
+        <button class="options-trigger" onclick="toggleMenu('${e.id}', this, event)" aria-label="Options">⋯</button>
       </td>
     </tr>
     <tr id="menu-row-${e.id}" class="${menuOpenForId === e.id ? '' : 'hidden'}">
@@ -110,17 +104,21 @@ function createTable(data){
   `;
 }
 
-function toggleMenu(id, event){
+// ── Menu ──
+function toggleMenu(id, btn, event){
   event.stopPropagation();
   if(menuOpenForId === id){
     menuOpenForId = null;
   } else {
     menuOpenForId = id;
   }
-  renderExpenses(); // Re-render to update menus
+  document.querySelectorAll("tr[id^='menu-row-']").forEach(row => {
+    const rowId = row.id.replace("menu-row-", "");
+    row.classList.toggle("hidden", rowId !== menuOpenForId);
+  });
 }
 
-// ── Salary modal ──
+// ── Salary ──
 let salaryTargetMonth = null;
 
 function openSalaryModal(month, event){
@@ -142,7 +140,7 @@ function saveSalary(){
   salaries[salaryTargetMonth] = val;
   saveSalaries();
   closeSalaryModal();
-  renderExpenses(); // Preserve open states
+  renderExpenses(); // Preserve state handled in render
 }
 
 // ── Delete entire month ──
@@ -158,28 +156,37 @@ function deleteMonth(month){
   delete salaries[month];
   saveExpenses();
   saveSalaries();
-  showToast(`Month ${month} deleted`);
+  showToast(`✅ ${month} deleted`);
   renderExpenses();
 }
 
 // ── Expand / Collapse All ──
 function expandAll(){
-  openMonths.clear();
-  const grouped = groupByMonth(expenses);
-  Object.keys(grouped).forEach(month => {
-    const monthId = month.replace(/\s/g,"");
-    openMonths.add(monthId);
-    openMainSections.add(monthId + "-main");
-    openSelfSections.add(monthId + "-self");
+  document.querySelectorAll('.month-card > div[id]').forEach(el => {
+    if(el.id && !el.id.includes('-main') && !el.id.includes('-self')){
+      el.classList.remove('hidden');
+      const chev = document.getElementById('chev-' + el.id);
+      if(chev) chev.textContent = '▴';
+    }
   });
-  renderExpenses();
+  document.querySelectorAll('.section-header + div').forEach(el => el.classList.remove('hidden'));
+  document.querySelectorAll('.chevron').forEach(c => {
+    if(c.id) c.textContent = '▴';
+  });
 }
 
 function collapseAll(){
-  openMonths.clear();
-  openMainSections.clear();
-  openSelfSections.clear();
-  renderExpenses();
+  document.querySelectorAll('.month-card > div[id]').forEach(el => {
+    if(el.id && !el.id.includes('-main') && !el.id.includes('-self')){
+      el.classList.add('hidden');
+      const chev = document.getElementById('chev-' + el.id);
+      if(chev) chev.textContent = '▾';
+    }
+  });
+  document.querySelectorAll('.section-header + div').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.chevron').forEach(c => {
+    if(c.id) c.textContent = '▾';
+  });
 }
 
 // ── Render ──
@@ -189,6 +196,11 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
 
   const grouped = groupByMonth(expenses);
   const months  = sortedMonths(grouped);
+
+  if(months.length === 0){
+    container.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-style:italic;">No expenses yet. Add one above!</div>`;
+    return;
+  }
 
   months.forEach(month => {
     const all  = grouped[month] || [];
@@ -203,8 +215,7 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
     const remaining = salary !== undefined ? salary - grandTotal : null;
     const hasSalary = salary !== undefined;
 
-    // Determine if month should be open
-    const monthShouldOpen = openMonths.has(monthId) || (autoExpandMonth === month);
+    const monthShouldOpen = (autoExpandMonth === month);
 
     const remainingHTML = remaining !== null ? `
       <div class="divider"></div>
@@ -226,8 +237,8 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
     const monthBodyClass = monthShouldOpen ? "" : "hidden";
     const chevText = monthShouldOpen ? "▴" : "▾";
 
-    const mainOpen = monthShouldOpen && (openMainSections.has(monthId + "-main") || autoExpandSection === "main");
-    const selfOpen = monthShouldOpen && (openSelfSections.has(monthId + "-self") || autoExpandSection === "self");
+    const mainOpen = monthShouldOpen && autoExpandSection === "main";
+    const selfOpen = monthShouldOpen && autoExpandSection === "self";
 
     card.innerHTML = `
       <div class="month-header" onclick="toggleSection('${monthId}')">
@@ -236,9 +247,9 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
           <button class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}" onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
           </button>
-          <button class="month-delete-btn" onclick="deleteMonth('${month}'); event.stopPropagation()" title="Delete entire month">🗑️</button>
+          <button onclick="deleteMonth('${month}');event.stopPropagation()" style="background:none;border:none;color:#C0392B;font-size:18px;cursor:pointer;padding:0 6px;" title="Delete month">🗑️</button>
         </div>
-        <span class="chevron ${monthShouldOpen ? 'open' : ''}" id="chev-${monthId}">${chevText}</span>
+        <span class="chevron" id="chev-${monthId}">${chevText}</span>
       </div>
 
       <div id="${monthId}" class="${monthBodyClass}">
@@ -253,7 +264,7 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
           <span class="chevron ${mainOpen ? 'open' : ''}" id="chev-${monthId}-main">${mainOpen ? '▴' : '▾'}</span>
         </div>
         <div id="${monthId}-main" class="${mainOpen ? '' : 'hidden'}">
-          ${createTable(main)}
+          ${createTable(main, month)}
         </div>
 
         <div class="section-header" onclick="toggleSection('${monthId}-self', event)">
@@ -261,7 +272,7 @@ function renderExpenses(autoExpandMonth = null, autoExpandSection = null){
           <span class="chevron ${selfOpen ? 'open' : ''}" id="chev-${monthId}-self">${selfOpen ? '▴' : '▾'}</span>
         </div>
         <div id="${monthId}-self" class="${selfOpen ? '' : 'hidden'}">
-          ${createTable(self)}
+          ${createTable(self, month)}
         </div>
       </div>
     `;
@@ -274,33 +285,27 @@ function toggleSection(id, event){
   if(event) event.stopPropagation();
   const el = document.getElementById(id);
   if(!el) return;
-
   const nowHidden = el.classList.toggle("hidden");
   const chev = document.getElementById("chev-" + id);
   if(chev){
     chev.textContent = nowHidden ? "▾" : "▴";
     chev.classList.toggle("open", !nowHidden);
   }
-
-  // Update tracking
-  if(id.includes("-main")){
-    if(!nowHidden) openMainSections.add(id);
-    else openMainSections.delete(id);
-  } else if(id.includes("-self")){
-    if(!nowHidden) openSelfSections.add(id);
-    else openSelfSections.delete(id);
-  } else {
-    if(!nowHidden) openMonths.add(id);
-    else openMonths.delete(id);
-  }
 }
 
 // ── CRUD ──
 function deleteExpense(id){
   menuOpenForId = null;
+  const expense = expenses.find(e => e.id === id);
+  let monthName = '';
+  if(expense){
+    const d = new Date(expense.date);
+    monthName = d.toLocaleString("default", { month:"long", year:"numeric" });
+  }
+  
   expenses = expenses.filter(e => e.id !== id);
   saveExpenses();
-  renderExpenses(); // Preserve open states
+  renderExpenses(monthName); // Stay on same month
   showToast("Expense deleted");
 }
 
@@ -398,11 +403,13 @@ function importData(event){
       const existingIds = new Set(expenses.map(x => x.id));
       const newOnes = data.expenses.filter(x => !existingIds.has(x.id));
       expenses = [...expenses, ...newOnes];
-      if(data.salaries) salaries = { ...salaries, ...data.salaries };
+      if(data.salaries && typeof data.salaries === "object"){
+        salaries = { ...salaries, ...data.salaries };
+      }
       saveExpenses();
       saveSalaries();
       renderExpenses();
-      showToast(`Imported ${newOnes.length} expenses!`);
+      showToast(`✅ Imported ${newOnes.length} new expense(s)!`);
     } catch(err){
       alert("Failed to read file.");
     }
