@@ -7,8 +7,9 @@ let formOpen   = false;
 // Track which expense's menu is open, stored OUTSIDE of DOM
 let menuOpenForId = null;
 
-// Track open sections for preservation after delete
-let openSections = new Set();
+// After saving, auto-expand these sections
+let pendingExpandMonth   = null;
+let pendingExpandSection = null;
 
 // ── Persistence ──
 function saveExpenses(){ localStorage.setItem("expenses", JSON.stringify(expenses)); }
@@ -60,8 +61,8 @@ function fmt(dateStr){
   return d.toLocaleDateString("en-IN", { day:"2-digit", month:"short" });
 }
 
-// ── Table ──
-function createTable(data, monthId){
+// ── Table (no category, options icon) ──
+function createTable(data){
   if(!data.length) return `<p class="no-expenses">No expenses yet</p>`;
 
   const rows = data.map(e => `
@@ -80,7 +81,7 @@ function createTable(data, monthId){
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
           </button>
-          <button class="opt-delete" onclick="deleteExpense('${e.id}', '${monthId}')">
+          <button class="opt-delete" onclick="deleteExpense('${e.id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
             Delete
           </button>
@@ -104,7 +105,7 @@ function createTable(data, monthId){
   `;
 }
 
-// ── Inline menu toggle ──
+// ── Inline menu toggle (no floating, survives re-render) ──
 function toggleMenu(id, btn, event){
   event.stopPropagation();
   if(menuOpenForId === id){
@@ -112,6 +113,8 @@ function toggleMenu(id, btn, event){
   } else {
     menuOpenForId = id;
   }
+  // Re-render just toggling visibility without full re-render
+  // Update all menu rows in DOM directly
   document.querySelectorAll("tr[id^='menu-row-']").forEach(row => {
     const rowId = row.id.replace("menu-row-", "");
     row.classList.toggle("hidden", rowId !== menuOpenForId);
@@ -140,7 +143,76 @@ function saveSalary(){
   salaries[salaryTargetMonth] = val;
   saveSalaries();
   closeSalaryModal();
+  // Preserve open states
   renderExpenses();
+}
+
+// ── Global expand/collapse ──
+function expandAll(){
+  document.querySelectorAll('.month-card > div[id]').forEach(el => {
+    if(el.classList.contains('hidden')) el.classList.remove('hidden');
+  });
+  document.querySelectorAll('.section-header + div').forEach(el => {
+    if(el.classList.contains('hidden')) el.classList.remove('hidden');
+  });
+  // Update chevrons
+  document.querySelectorAll('.chevron').forEach(chev => {
+    chev.textContent = '▴';
+    chev.classList.add('open');
+  });
+}
+
+function collapseAll(){
+  document.querySelectorAll('.month-card > div[id]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.section-header + div').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.chevron').forEach(chev => {
+    chev.textContent = '▾';
+    chev.classList.remove('open');
+  });
+}
+
+// ── Delete entire month ──
+function deleteMonth(month){
+  if(!confirm(`Delete ALL expenses for ${month}?\nThis cannot be undone.`)) return;
+  
+  const monthStart = new Date(month + " 1");
+  expenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    const eMonth = d.toLocaleString("default", { month:"long", year:"numeric" });
+    return eMonth !== month;
+  });
+  
+  delete salaries[month];
+  saveExpenses();
+  saveSalaries();
+  
+  // Show success toast with red theme
+  showDeleteToast();
+  renderExpenses();
+}
+
+function showDeleteToast(){
+  const t = document.createElement('div');
+  t.className = 'toast toast-delete';
+  t.innerHTML = `<span class="toast-icon">🗑</span> Month deleted!`;
+  t.style.position = 'fixed';
+  t.style.top = '18px';
+  t.style.left = '50%';
+  t.style.transform = 'translateX(-50%)';
+  t.style.padding = '11px 20px';
+  t.style.borderRadius = '40px';
+  t.style.fontSize = '14px';
+  t.style.fontWeight = '500';
+  t.style.background = '#C0392B';
+  t.style.color = 'white';
+  t.style.zIndex = '9999';
+  t.style.boxShadow = 'var(--shadow-md)';
+  document.body.appendChild(t);
+  
+  setTimeout(() => {
+    t.style.opacity = '0';
+    setTimeout(() => t.remove(), 350);
+  }, 1600);
 }
 
 // ── Render ──
@@ -152,7 +224,7 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
   const months  = sortedMonths(grouped);
 
   months.forEach(month => {
-    const all  = grouped[month] || [];
+    const all  = grouped[month];
     const main = all.filter(e => e.person === "Main");
     const self = all.filter(e => e.person === "Self");
     const mainTotal  = main.reduce((s,e) => s + Number(e.amount), 0);
@@ -164,7 +236,8 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const remaining = salary !== undefined ? salary - grandTotal : null;
     const hasSalary = salary !== undefined;
 
-    const monthShouldOpen = (autoExpandMonth === month) || openSections.has(monthId);
+    // For preserve state: better to keep current open state if possible, but for simplicity use autoExpand for now
+    const monthShouldOpen = (autoExpandMonth === month);
 
     const remainingHTML = remaining !== null ? `
       <div class="divider"></div>
@@ -183,12 +256,14 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const card = document.createElement("div");
     card.className = "month-card";
 
+    // Month body: open if it's the auto-expand target
     const monthBodyClass = monthShouldOpen ? "" : "hidden";
     const chevText = monthShouldOpen ? "▴" : "▾";
     const chevClass = monthShouldOpen ? "chevron open" : "chevron";
 
-    const mainOpen = (monthShouldOpen && (autoExpandSection === "main" || openSections.has(monthId + "-main")));
-    const selfOpen = (monthShouldOpen && (autoExpandSection === "self" || openSections.has(monthId + "-self")));
+    // Sub-sections: open if matches autoExpandSection
+    const mainOpen = monthShouldOpen && autoExpandSection === "main";
+    const selfOpen = monthShouldOpen && autoExpandSection === "self";
 
     card.innerHTML = `
       <div class="month-header" onclick="toggleSection('${monthId}')">
@@ -198,6 +273,10 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
             class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}"
             onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
+          </button>
+          <button onclick="deleteMonth('${month}'); event.stopPropagation();" 
+                  style="margin-left: 8px; padding: 3px 8px; font-size: 11px; background: #fee2e2; color: #c0392b; border: 1px solid #fecaca; border-radius: 12px; cursor: pointer;">
+            🗑
           </button>
         </div>
         <span class="${chevClass}" id="chev-${monthId}">${chevText}</span>
@@ -215,7 +294,7 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
           <span class="${mainOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-main">${mainOpen ? '▴' : '▾'}</span>
         </div>
         <div id="${monthId}-main" class="${mainOpen ? '' : 'hidden'}">
-          ${createTable(main, monthId)}
+          ${createTable(main)}
         </div>
 
         <div class="section-header" onclick="toggleSection('${monthId}-self', event)">
@@ -223,7 +302,7 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
           <span class="${selfOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-self">${selfOpen ? '▴' : '▾'}</span>
         </div>
         <div id="${monthId}-self" class="${selfOpen ? '' : 'hidden'}">
-          ${createTable(self, monthId)}
+          ${createTable(self)}
         </div>
       </div>
     `;
@@ -242,22 +321,13 @@ function toggleSection(id, event){
     chev.textContent = nowHidden ? "▾" : "▴";
     chev.classList.toggle("open", !nowHidden);
   }
-  if(!nowHidden){
-    openSections.add(id);
-  } else {
-    openSections.delete(id);
-  }
 }
 
 // ── CRUD ──
-function deleteExpense(id, monthId){
-  if(!confirm("🗑️ Delete this expense?")) return;
-  
+function deleteExpense(id){
   menuOpenForId = null;
   expenses = expenses.filter(e => e.id !== id);
   saveExpenses();
-  
-  // Preserve open sections after delete
   renderExpenses();
 }
 
@@ -309,6 +379,7 @@ document.getElementById("expenseForm").addEventListener("submit", (e) => {
 
   saveExpenses();
 
+  // ── Change 3: Determine which month+section to auto-expand ──
   const d         = new Date(dateVal + "T00:00:00");
   const monthName = d.toLocaleString("default", { month:"long", year:"numeric" });
   const section   = personVal === "Main" ? "main" : "self";
@@ -321,13 +392,14 @@ document.getElementById("expenseForm").addEventListener("submit", (e) => {
 
   if(isNew) showToast();
 
+  // Close form
   document.getElementById("expenseFormContainer").classList.add("hidden");
   formOpen = false;
   document.getElementById("addBtnIcon").textContent = "+";
   document.getElementById("addExpenseBtn").style.borderRadius = "16px";
 });
 
-// ── Export / Import ──
+// ── Export ──
 function exportData(){
   const payload = { exportedAt: new Date().toISOString(), expenses, salaries };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
@@ -351,7 +423,7 @@ function importData(event){
     try {
       const data = JSON.parse(ev.target.result);
       if(!Array.isArray(data.expenses)){ alert("Invalid backup file."); return; }
-      if(!confirm(`Import ${data.expenses.length} expense(s)?\nMerges with existing data.`)) return;
+      if(!confirm(`Import ${data.expenses.length} expense(s)?\nMerges with existing data (duplicates skipped).`)) return;
       const existingIds = new Set(expenses.map(x => x.id));
       const newOnes = data.expenses.filter(x => !existingIds.has(x.id));
       expenses = [...expenses, ...newOnes];
@@ -363,7 +435,7 @@ function importData(event){
       renderExpenses();
       alert(`✅ Imported ${newOnes.length} new expense(s)!`);
     } catch(err){
-      alert("Failed to read file.");
+      alert("Failed to read file. Make sure it's a valid backup JSON.");
     }
   };
   reader.readAsText(file);

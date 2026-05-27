@@ -35,13 +35,11 @@ body {
   color: var(--text-primary);
   padding: 16px 14px 40px;
   min-height: 100vh;
-  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .container {
   max-width: 540px;
   margin: 0 auto;
-  width: 100%;
 }
 
 /* ── Header ── */
@@ -65,7 +63,7 @@ h1 {
 /* ── Fix 4: tagline visible colour ── */
 .tagline {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-secondary);   /* was --text-muted which blended into bg */
   font-weight: 400;
   letter-spacing: 0.04em;
   margin-top: 4px;
@@ -166,6 +164,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* Prevent any child from overflowing */
   min-width: 0;
 }
 
@@ -187,6 +186,7 @@ input, select {
   background: var(--bg);
   transition: border-color 0.15s ease;
   width: 100%;
+  /* Fix 2: prevent date/input overflow */
   min-width: 0;
   max-width: 100%;
 }
@@ -202,8 +202,10 @@ input::placeholder { color: var(--text-muted); }
 /* Fix 2: Date field — constrain & fix overflow */
 input[type="date"] {
   color: var(--text-muted);
+  /* Remove appearance so it respects width */
   -webkit-appearance: none;
   appearance: none;
+  /* Shrink the calendar icon padding on webkit */
   padding-right: 8px;
 }
 
@@ -358,7 +360,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
-  table-layout: fixed;
+  table-layout: fixed;   /* Fix 2: prevents table from expanding beyond card */
 }
 
 .expense-table th {
@@ -573,6 +575,25 @@ input[type="date"].has-value { color: var(--text-primary); }
   cursor: pointer;
 }
 
+/* Global Controls */
+.global-controls button.control-btn {
+  padding: 10px 18px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.global-controls button.control-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
 /* ── Empty state ── */
 .no-expenses {
   padding: 12px 8px;
@@ -582,27 +603,3 @@ input[type="date"].has-value { color: var(--text-primary); }
 }
 
 .hidden { display: none !important; }
-
-/* v8 improvements */
-.help-section {
-  margin-top: 30px;
-  padding: 16px;
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.help-section ol {
-  margin-top: 8px;
-  padding-left: 18px;
-  line-height: 1.5;
-}
-
-.version {
-  margin-top: 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-muted);
-}
