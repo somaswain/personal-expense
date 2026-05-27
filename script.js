@@ -1,3 +1,10 @@
+
+function parseMonthYear(monthString){
+  const [monthName, year] = monthString.split(" ");
+  const monthIndex = new Date(Date.parse(monthName +" 1, 2024")).getMonth();
+  return new Date(Number(year), monthIndex, 1);
+}
+
 // ── State ──
 let expenses   = JSON.parse(localStorage.getItem("expenses"))  || [];
 let salaries   = JSON.parse(localStorage.getItem("salaries"))  || {};
@@ -53,7 +60,12 @@ function groupByMonth(data){
 }
 
 function sortedMonths(grouped){
-  return Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
+  return Object.keys(grouped).sort((a,b) => {
+    const [am, ay] = a.split(" ");
+    const [bm, by] = b.split(" ");
+    return new Date(`${by}-${new Date(Date.parse(bm + " 1, 2024")).getMonth()+1}-01`)
+      - new Date(`${ay}-${new Date(Date.parse(am + " 1, 2024")).getMonth()+1}-01`);
+  });
 }
 
 function fmt(dateStr){
@@ -392,3 +404,26 @@ function collapseAll() {
 
 // ── Init ──
 renderExpenses();
+
+
+function deleteMonth(month){
+  const confirmDelete = confirm(`Delete all expenses for ${month}?`);
+
+  if(!confirmDelete) return;
+
+  expenses = expenses.filter(exp => {
+    const expMonth = new Date(exp.date).toLocaleString("default", {
+      month:"long",
+      year:"numeric"
+    });
+
+    return expMonth !== month;
+  });
+
+  delete salaries[month];
+
+  localStorage.setItem("expenses", JSON.stringify(expenses));
+  localStorage.setItem("salaries", JSON.stringify(salaries));
+
+  renderExpenses();
+}
