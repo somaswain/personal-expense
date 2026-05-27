@@ -33,13 +33,15 @@ body {
   background: var(--bg);
   font-family: var(--font-body);
   color: var(--text-primary);
-  padding: 16px 14px 40px;
+  padding: 16px 14px 80px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .container {
   max-width: 540px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* ── Header ── */
@@ -360,7 +362,10 @@ input[type="date"].has-value { color: var(--text-primary); }
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
-  table-layout: fixed;   /* Fix 2: prevents table from expanding beyond card */
+  table-layout: fixed;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
 }
 
 .expense-table th {
@@ -375,15 +380,15 @@ input[type="date"].has-value { color: var(--text-primary); }
   overflow: hidden;
 }
 
-/* Column widths */
+/* Column widths - responsive */
 .expense-table th:nth-child(1),
-.expense-table td:nth-child(1) { width: 28%; }
+.expense-table td:nth-child(1) { width: 30%; }
 .expense-table th:nth-child(2),
-.expense-table td:nth-child(2) { width: 22%; }
+.expense-table td:nth-child(2) { width: 25%; }
 .expense-table th:nth-child(3),
-.expense-table td:nth-child(3) { width: auto; }
+.expense-table td:nth-child(3) { width: 35%; }
 .expense-table th:nth-child(4),
-.expense-table td:nth-child(4) { width: 36px; }
+.expense-table td:nth-child(4) { width: 10%; min-width: 40px; }
 
 .expense-table td {
   padding: 10px 8px;

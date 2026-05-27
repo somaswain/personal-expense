@@ -252,9 +252,11 @@ function toggleSection(id, event){
 
 // ── CRUD ──
 function deleteExpense(id){
+  if (!confirm('🗑️ Delete this expense?')) return;
   menuOpenForId = null;
   expenses = expenses.filter(e => e.id !== id);
   saveExpenses();
+  // Preserve open sections by re-rendering with last known, but simple: full render
   renderExpenses();
 }
 
