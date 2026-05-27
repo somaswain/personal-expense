@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Expense Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -74,7 +74,7 @@
           </div>
           <div class="form-group">
             <label>Date</label>
-            <input type="text" id="date" placeholder="Select Date" onfocus="this.type='date'">
+            <input type="text" id="date" placeholder="Select Date" onfocus="this.type='date'" required>
           </div>
         </div>
 
@@ -97,18 +97,31 @@
   <!-- Monthly list -->
   <div id="monthlyContainer"></div>
 
-  <!-- How to Use -->
-  <div class="help-section">
-    <strong>How to Use</strong>
-    <ol>
-      <li>Tap <strong>+ Add Expense</strong> to log new entry.</li>
-      <li>Use Expand/Collapse buttons above months.</li>
-      <li>Tap month headers or salary tag to set income.</li>
-      <li>Use ⋯ on expense or 🗑️ on month for actions.</li>
-      <li>Export/Import backups from header.</li>
-    </ol>
-    <div class="version">v17.0 • crafted by somaswain</div>
-  </div>
+  <!-- How to Use (Cleaned & Consolidated) -->
+  <section class="how-to-use">
+    <h2>How To Use</h2>
+    <div class="guide-item">
+      <h3>Add Expense</h3>
+      <p>Tap <strong>+ Add Expense</strong>, enter the details, and save.</p>
+    </div>
+    <div class="guide-item">
+      <h3>Track Monthly Salary</h3>
+      <p>Tap the <strong>+ Salary</strong> button to calculate your remaining balance automatically.</p>
+    </div>
+    <div class="guide-item">
+      <h3>Edit or Delete</h3>
+      <p>Tap ⋯ to edit expenses, or use the 🗑️ icon beside a month to delete it entirely.</p>
+    </div>
+    <div class="guide-item">
+      <h3>Backup Data</h3>
+      <p>Use the Export and Import icons at the top right to backup or restore data.</p>
+    </div>
+  </section>
+
+  <footer class="app-footer">
+    Expense Tracker • Version V18
+  </footer>
+
 </div>
 
 <!-- Salary Modal -->
@@ -127,10 +140,5 @@
 </div>
 
 <script src="script.js"></script>
-
-<footer class="app-footer">
-  Expense Tracker • Version V17
-</footer>
-
 </body>
 </html>

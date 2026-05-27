@@ -10,16 +10,6 @@ function deleteMonthBtn(month){
   `;
 }
 
-function createDeleteMonthButton(month){
-  return `
-    <button
-      class="delete-month-btn"
-      onclick="event.stopPropagation(); deleteMonth('${month}')">
-      🗑 Delete Month
-    </button>
-  `;
-}
-
 function parseMonthYear(monthString){
   const [monthName, year] = monthString.split(" ");
   const monthIndex = new Date(Date.parse(monthName +" 1, 2024")).getMonth();
@@ -31,11 +21,8 @@ let expenses   = JSON.parse(localStorage.getItem("expenses"))  || [];
 let salaries   = JSON.parse(localStorage.getItem("salaries"))  || {};
 let editingId  = null;
 let formOpen   = false;
-
-// Track which expense's menu is open, stored OUTSIDE of DOM
 let menuOpenForId = null;
 
-// After saving, auto-expand these sections
 let pendingExpandMonth   = null;
 let pendingExpandSection = null;
 
@@ -94,7 +81,7 @@ function fmt(dateStr){
   return d.toLocaleDateString("en-IN", { day:"2-digit", month:"short" });
 }
 
-// ── Table (no category, options icon) ──
+// ── Table ──
 function createTable(data){
   if(!data.length) return `<p class="no-expenses">No expenses yet</p>`;
 
@@ -138,7 +125,6 @@ function createTable(data){
   `;
 }
 
-// ── Inline menu toggle (no floating, survives re-render) ──
 function toggleMenu(id, btn, event){
   event.stopPropagation();
   if(menuOpenForId === id){
@@ -146,8 +132,6 @@ function toggleMenu(id, btn, event){
   } else {
     menuOpenForId = id;
   }
-  // Re-render just toggling visibility without full re-render
-  // Update all menu rows in DOM directly
   document.querySelectorAll("tr[id^='menu-row-']").forEach(row => {
     const rowId = row.id.replace("menu-row-", "");
     row.classList.toggle("hidden", rowId !== menuOpenForId);
@@ -200,7 +184,6 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const remaining = salary !== undefined ? salary - grandTotal : null;
     const hasSalary = salary !== undefined;
 
-    // Auto-expand: check if this month should be open
     const monthShouldOpen = (autoExpandMonth === month);
 
     const remainingHTML = remaining !== null ? `
@@ -220,25 +203,26 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const card = document.createElement("div");
     card.className = "month-card";
 
-    // Month body: open if it's the auto-expand target
     const monthBodyClass = monthShouldOpen ? "" : "hidden";
     const chevText = monthShouldOpen ? "▴" : "▾";
     const chevClass = monthShouldOpen ? "chevron open" : "chevron";
 
-    // Sub-sections: open if matches autoExpandSection
     const mainOpen = monthShouldOpen && autoExpandSection === "main";
     const selfOpen = monthShouldOpen && autoExpandSection === "self";
 
+    // FIXED: Properly injecting deleteMonthBtn(month) into the title flow
     card.innerHTML = `
       <div class="month-header" onclick="toggleSection('${monthId}')">
         <div class="month-header-left">
-          <span class="month-title">${month}</span>
+          <span class="month-title">
+            ${month} 
+            ${deleteMonthBtn(month)}
+          </span>
           <button
             class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}"
             onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
           </button>
-          ${deleteMonthBtn(month)}
         </div>
         <span class="${chevClass}" id="chev-${monthId}">${chevText}</span>
       </div>
@@ -340,7 +324,6 @@ document.getElementById("expenseForm").addEventListener("submit", (e) => {
 
   saveExpenses();
 
-  // ── Change 3: Determine which month+section to auto-expand ──
   const d         = new Date(dateVal + "T00:00:00");
   const monthName = d.toLocaleString("default", { month:"long", year:"numeric" });
   const section   = personVal === "Main" ? "main" : "self";
@@ -353,14 +336,13 @@ document.getElementById("expenseForm").addEventListener("submit", (e) => {
 
   if(isNew) showToast();
 
-  // Close form
   document.getElementById("expenseFormContainer").classList.add("hidden");
   formOpen = false;
   document.getElementById("addBtnIcon").textContent = "+";
   document.getElementById("addExpenseBtn").style.borderRadius = "16px";
 });
 
-// ── Export ──
+// ── Export / Import ──
 function exportData(){
   const payload = { exportedAt: new Date().toISOString(), expenses, salaries };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
@@ -409,7 +391,6 @@ function expandAll() {
     if (el.classList.contains('hidden')) {
       const monthId = el.id;
       toggleSection(monthId);
-      // Also expand sub-sections
       toggleSection(monthId + '-main');
       toggleSection(monthId + '-self');
     }
@@ -424,16 +405,15 @@ function collapseAll() {
   });
 }
 
-// ── Init ──
-renderExpenses();
-
 function deleteMonth(month){
   const confirmDelete = confirm(`Delete all expenses for ${month}?`);
 
   if(!confirmDelete) return;
 
   expenses = expenses.filter(exp => {
-    const expMonth = new Date(exp.date).toLocaleString("default", {
+    // FIXED: Appended "T00:00:00" to prevent localized timezone bleeding which could delete the wrong month
+    const expDate = new Date(exp.date + "T00:00:00");
+    const expMonth = expDate.toLocaleString("default", {
       month:"long",
       year:"numeric"
     });
@@ -448,3 +428,6 @@ function deleteMonth(month){
 
   renderExpenses();
 }
+
+// ── Init ──
+renderExpenses();
