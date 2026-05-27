@@ -1,5 +1,4 @@
 
-
 function deleteMonthBtn(month){
   return `
     <button
@@ -20,7 +19,6 @@ function createDeleteMonthButton(month){
     </button>
   `;
 }
-
 
 function parseMonthYear(monthString){
   const [monthName, year] = monthString.split(" ");
@@ -240,6 +238,7 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
             onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
           </button>
+          ${deleteMonthBtn(month)}
         </div>
         <span class="${chevClass}" id="chev-${monthId}">${chevText}</span>
       </div>
@@ -427,7 +426,6 @@ function collapseAll() {
 
 // ── Init ──
 renderExpenses();
-
 
 function deleteMonth(month){
   const confirmDelete = confirm(`Delete all expenses for ${month}?`);
