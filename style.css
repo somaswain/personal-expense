@@ -35,7 +35,6 @@ body {
   color: var(--text-primary);
   padding: 16px 14px 40px;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 .container {
@@ -61,9 +60,10 @@ h1 {
   line-height: 1.1;
 }
 
+/* ── Fix 4: tagline visible colour ── */
 .tagline {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-secondary);   /* was --text-muted which blended into bg */
   font-weight: 400;
   letter-spacing: 0.04em;
   margin-top: 4px;
@@ -138,35 +138,6 @@ h1 {
 
 .add-btn:active { opacity: 0.85; }
 
-/* Controls */
-.controls {
-  display: flex;
-  gap: 8px;
-  margin: 8px 0 24px;
-}
-
-.control-btn {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.control-btn:hover {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.expand-btn { }
-.collapse-btn { }
-
 /* ── Form Panel ── */
 .form-panel {
   background: var(--surface);
@@ -193,6 +164,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* Prevent any child from overflowing */
   min-width: 0;
 }
 
@@ -214,6 +186,7 @@ input, select {
   background: var(--bg);
   transition: border-color 0.15s ease;
   width: 100%;
+  /* Fix 2: prevent date/input overflow */
   min-width: 0;
   max-width: 100%;
 }
@@ -226,10 +199,13 @@ input:focus, select:focus {
 
 input::placeholder { color: var(--text-muted); }
 
+/* Fix 2: Date field — constrain & fix overflow */
 input[type="date"] {
   color: var(--text-muted);
+  /* Remove appearance so it respects width */
   -webkit-appearance: none;
   appearance: none;
+  /* Shrink the calendar icon padding on webkit */
   padding-right: 8px;
 }
 
@@ -384,7 +360,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
-  table-layout: fixed;
+  table-layout: fixed;   /* Fix 2: prevents table from expanding beyond card */
 }
 
 .expense-table th {
@@ -399,10 +375,15 @@ input[type="date"].has-value { color: var(--text-primary); }
   overflow: hidden;
 }
 
-.expense-table th:nth-child(1), .expense-table td:nth-child(1) { width: 28%; }
-.expense-table th:nth-child(2), .expense-table td:nth-child(2) { width: 22%; }
-.expense-table th:nth-child(3), .expense-table td:nth-child(3) { width: auto; }
-.expense-table th:nth-child(4), .expense-table td:nth-child(4) { width: 36px; }
+/* Column widths */
+.expense-table th:nth-child(1),
+.expense-table td:nth-child(1) { width: 28%; }
+.expense-table th:nth-child(2),
+.expense-table td:nth-child(2) { width: 22%; }
+.expense-table th:nth-child(3),
+.expense-table td:nth-child(3) { width: auto; }
+.expense-table th:nth-child(4),
+.expense-table td:nth-child(4) { width: 36px; }
 
 .expense-table td {
   padding: 10px 8px;
@@ -443,6 +424,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   padding-right: 4px;
 }
 
+/* ── Options trigger ── */
 .options-trigger {
   background: none;
   border: none;
@@ -460,6 +442,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-primary);
 }
 
+/* ── Fix 1: Inline menu row (replaces floating menu) ── */
 .inline-menu-cell {
   padding: 0 !important;
   border-bottom: 1px solid var(--border);
@@ -492,6 +475,7 @@ input[type="date"].has-value { color: var(--text-primary); }
 
 .inline-menu .opt-edit { border-right: 1px solid var(--border); }
 .inline-menu .opt-edit svg { stroke: var(--text-secondary); }
+
 .inline-menu .opt-delete { color: var(--red); }
 .inline-menu .opt-delete svg { stroke: var(--red); }
 
@@ -599,43 +583,69 @@ input[type="date"].has-value { color: var(--text-primary); }
   font-style: italic;
 }
 
+.hidden { display: none !important; }
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 20px;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 11px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.control-btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
 /* ── Help Section ── */
 .help-section {
-  margin-top: 40px;
-  padding: 20px;
   background: var(--surface);
   border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 24px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  font-size: 13.5px;
-  color: var(--text-secondary);
-  line-height: 1.55;
 }
 
 .help-section strong {
   display: block;
-  margin-bottom: 10px;
-  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
 }
 
 .help-section ol {
   padding-left: 20px;
-  margin-top: 6px;
+  line-height: 1.6;
+  font-size: 13.5px;
+  color: var(--text-secondary);
 }
 
 .help-section li {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.version {
-  margin-top: 16px;
+.help-section .version {
+  margin-top: 20px;
   text-align: center;
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  font-style: italic;
 }
-
-.hidden { display: none !important; }

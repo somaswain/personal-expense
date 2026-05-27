@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Expense Tracker v12</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -47,7 +47,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Amount (₹)</label>
-            <input type="number" id="amount" placeholder="0" required inputmode="decimal">
+            <input type="number" id="amount" placeholder="0" required>
           </div>
           <div class="form-group">
             <label>Tag</label>
@@ -90,8 +90,8 @@
 
   <!-- Expand / Collapse Controls -->
   <div class="controls">
-    <button onclick="expandAll()" class="control-btn expand-btn">Expand All</button>
-    <button onclick="collapseAll()" class="control-btn collapse-btn">Collapse All</button>
+    <button onclick="expandAll()" class="control-btn">Expand All</button>
+    <button onclick="collapseAll()" class="control-btn">Collapse All</button>
   </div>
 
   <!-- Monthly list -->
@@ -107,7 +107,7 @@
       <li>Use ⋯ on expense or 🗑️ on month for actions.</li>
       <li>Export/Import backups from header.</li>
     </ol>
-    <div class="version">v12.0 • crafted by somaswain</div>
+    <div class="version">v13.0 • crafted by somaswain</div>
   </div>
 </div>
 
@@ -118,7 +118,7 @@
       <h3>Salary — <span id="modalMonthLabel"></span></h3>
       <button class="modal-close" onclick="closeSalaryModal()">✕</button>
     </div>
-    <input type="number" id="salaryInput" placeholder="Enter amount" inputmode="decimal">
+    <input type="number" id="salaryInput" placeholder="Enter amount">
     <div class="modal-buttons">
       <button onclick="saveSalary()" class="save-salary-btn">Save</button>
       <button onclick="closeSalaryModal()" class="cancel-salary-btn">Cancel</button>
