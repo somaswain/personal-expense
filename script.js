@@ -17,14 +17,12 @@ function parseMonthYear(monthString){
 }
 
 // ── State ──
-let expenses   = JSON.parse(localStorage.getItem("expenses"))  || [];
-let salaries   = JSON.parse(localStorage.getItem("salaries"))  || {};
-let editingId  = null;
-let formOpen   = false;
-let menuOpenForId = null;
-
-let pendingExpandMonth   = null;
-let pendingExpandSection = null;
+let expenses       = JSON.parse(localStorage.getItem("expenses"))  || [];
+let salaries       = JSON.parse(localStorage.getItem("salaries"))  || {};
+let editingId      = null;
+let formOpen       = false;
+let menuOpenForId  = null;
+let openSectionIds = new Set(); // FIXED: Keeps track of open sections across renders
 
 // ── Persistence ──
 function saveExpenses(){ localStorage.setItem("expenses", JSON.stringify(expenses)); }
@@ -58,6 +56,12 @@ dateInput.addEventListener("change", () => {
 // ── Group & sort months ──
 function groupByMonth(data){
   const g = {};
+  
+  // Initialize any months that have a salary attached so they remain visible even if empty
+  Object.keys(salaries).forEach(month => {
+    g[month] = [];
+  });
+
   data.forEach(e => {
     const d     = new Date(e.date + "T00:00:00");
     const month = d.toLocaleString("default", { month:"long", year:"numeric" });
@@ -160,12 +164,22 @@ function saveSalary(){
   salaries[salaryTargetMonth] = val;
   saveSalaries();
   closeSalaryModal();
-  renderExpenses();
+  renderExpenses(); // Dropdowns will remain open natively via openSectionIds
 }
 
 // ── Render ──
 function renderExpenses(autoExpandMonth, autoExpandSection){
   const container = document.getElementById("monthlyContainer");
+
+  // Track the newly added expense expansion so it survives the innerHTML wipe
+  if(autoExpandMonth){
+    const mId = autoExpandMonth.replace(/\s/g,"");
+    openSectionIds.add(mId);
+    if(autoExpandSection){
+      openSectionIds.add(mId + "-" + autoExpandSection);
+    }
+  }
+
   container.innerHTML = "";
 
   const grouped = groupByMonth(expenses);
@@ -184,7 +198,10 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const remaining = salary !== undefined ? salary - grandTotal : null;
     const hasSalary = salary !== undefined;
 
-    const monthShouldOpen = (autoExpandMonth === month);
+    // Use our global Set to determine state
+    const monthShouldOpen = openSectionIds.has(monthId);
+    const mainOpen        = openSectionIds.has(monthId + "-main");
+    const selfOpen        = openSectionIds.has(monthId + "-self");
 
     const remainingHTML = remaining !== null ? `
       <div class="divider"></div>
@@ -207,10 +224,6 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const chevText = monthShouldOpen ? "▴" : "▾";
     const chevClass = monthShouldOpen ? "chevron open" : "chevron";
 
-    const mainOpen = monthShouldOpen && autoExpandSection === "main";
-    const selfOpen = monthShouldOpen && autoExpandSection === "self";
-
-    // FIXED: Properly injecting deleteMonthBtn(month) into the title flow
     card.innerHTML = `
       <div class="month-header" onclick="toggleSection('${monthId}')">
         <div class="month-header-left">
@@ -260,11 +273,20 @@ function toggleSection(id, event){
   if(event) event.stopPropagation();
   const el = document.getElementById(id);
   if(!el) return;
+  
   const nowHidden = el.classList.toggle("hidden");
+  
   const chev = document.getElementById("chev-" + id);
   if(chev){
     chev.textContent = nowHidden ? "▾" : "▴";
     chev.classList.toggle("open", !nowHidden);
+  }
+
+  // Record state to persist across renders
+  if(nowHidden){
+    openSectionIds.delete(id);
+  } else {
+    openSectionIds.add(id);
   }
 }
 
@@ -273,7 +295,7 @@ function deleteExpense(id){
   menuOpenForId = null;
   expenses = expenses.filter(e => e.id !== id);
   saveExpenses();
-  renderExpenses();
+  renderExpenses(); // Dropdowns stay open since state is saved
 }
 
 function editExpense(id){
@@ -387,22 +409,19 @@ function importData(event){
 
 // ── Expand / Collapse All ──
 function expandAll() {
-  document.querySelectorAll('.month-card > div[id]').forEach(el => {
-    if (el.classList.contains('hidden')) {
-      const monthId = el.id;
-      toggleSection(monthId);
-      toggleSection(monthId + '-main');
-      toggleSection(monthId + '-self');
-    }
+  const grouped = groupByMonth(expenses);
+  Object.keys(grouped).forEach(month => {
+    const mId = month.replace(/\s/g,"");
+    openSectionIds.add(mId);
+    openSectionIds.add(mId + "-main");
+    openSectionIds.add(mId + "-self");
   });
+  renderExpenses();
 }
 
 function collapseAll() {
-  document.querySelectorAll('.month-card > div[id]').forEach(el => {
-    if (!el.classList.contains('hidden')) {
-      toggleSection(el.id);
-    }
-  });
+  openSectionIds.clear();
+  renderExpenses();
 }
 
 function deleteMonth(month){
@@ -411,20 +430,23 @@ function deleteMonth(month){
   if(!confirmDelete) return;
 
   expenses = expenses.filter(exp => {
-    // FIXED: Appended "T00:00:00" to prevent localized timezone bleeding which could delete the wrong month
     const expDate = new Date(exp.date + "T00:00:00");
     const expMonth = expDate.toLocaleString("default", {
       month:"long",
       year:"numeric"
     });
-
     return expMonth !== month;
   });
 
   delete salaries[month];
-
   localStorage.setItem("expenses", JSON.stringify(expenses));
   localStorage.setItem("salaries", JSON.stringify(salaries));
+
+  // Purge deleted month from open tracking set
+  const mId = month.replace(/\s/g,"");
+  openSectionIds.delete(mId);
+  openSectionIds.delete(mId + "-main");
+  openSectionIds.delete(mId + "-self");
 
   renderExpenses();
 }

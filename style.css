@@ -7,7 +7,7 @@
 }
 
 html, body {
-  overflow-x: hidden; /* Fixes horizontal cut-off/shift issue */
+  overflow-x: hidden;
 }
 
 :root {
@@ -185,7 +185,7 @@ input, select {
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border);
   font-family: var(--font-body);
-  font-size: 16px; /* FIXED: 16px prevents iOS zoom on tap */
+  font-size: 16px;
   color: var(--text-primary);
   background: var(--bg);
   transition: border-color 0.15s ease;
@@ -530,7 +530,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border);
   font-family: var(--font-body);
-  font-size: 16px; /* Ensure 16px here too */
+  font-size: 16px;
   color: var(--text-primary);
   background: var(--bg);
   width: 100%;
@@ -620,7 +620,7 @@ input[type="date"].has-value { color: var(--text-primary); }
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
 }
 
-/* ── How To Use (Updated layout) ── */
+/* ── How To Use ── */
 .how-to-use {
   background: #ffffff;
   border-radius: 16px;
