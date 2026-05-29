@@ -295,20 +295,27 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
 
   months.forEach(month => {
     const all  = grouped[month];
-    const main = all.filter(e => e.person === "Main");
+    const home = all.filter(e => e.person === "Home" || e.person === "Main");
     const self = all.filter(e => e.person === "Self");
-    const mainTotal  = main.reduce((s,e) => s + Number(e.amount), 0);
+    const homeTotal  = home.reduce((s,e) => s + Number(e.amount), 0);
     const selfTotal  = self.reduce((s,e) => s + Number(e.amount), 0);
-    const grandTotal = mainTotal + selfTotal;
+    const grandTotal = homeTotal + selfTotal;
 
     const monthId = month.replace(/\s/g, "");
     const monthShouldOpen = openSectionIds.has(monthId);
-    const mainOpen = openSectionIds.has(monthId + "-main");
+    const homeOpen = openSectionIds.has(monthId + "-home");
     const selfOpen = openSectionIds.has(monthId + "-self");
 
     const hasSalary = salaries[month] !== undefined;
     const salaryVal = hasSalary ? salaries[month] : 0;
     const remaining = salaryVal - grandTotal;
+
+    const salaryHTML = hasSalary ? `
+      <div class="total-row salary-row">
+        <span>Salary</span>
+        <span>₹${salaryVal.toLocaleString()}</span>
+      </div>
+    ` : "";
 
     const remainingHTML = hasSalary ? `
       <div class="total-row remaining-row">
@@ -339,16 +346,17 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
       </div>
       <div id="${monthId}" class="${monthBodyClass}">
         <div class="summary-block">
-          <div class="total-row"><span>Main</span><span>₹${mainTotal.toLocaleString()}</span></div>
+          <div class="total-row"><span>Home</span><span>₹${homeTotal.toLocaleString()}</span></div>
           <div class="total-row"><span>Self</span><span>₹${selfTotal.toLocaleString()}</span></div>
+          ${salaryHTML}
           ${remainingHTML}
         </div>
-        <div class="section-header" onclick="toggleSection('${monthId}-main', event)">
-          <span>Main Expenses</span>
-          <span class="${mainOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-main">${mainOpen ? '▴' : '▾'}</span>
+        <div class="section-header" onclick="toggleSection('${monthId}-home', event)">
+          <span>Home Expenses</span>
+          <span class="${homeOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-home">${homeOpen ? '▴' : '▾'}</span>
         </div>
-        <div id="${monthId}-main" class="${mainOpen ? '' : 'hidden'}">
-          ${createTable(main)}
+        <div id="${monthId}-home" class="${homeOpen ? '' : 'hidden'}">
+          ${createTable(home)}
         </div>
         <div class="section-header" onclick="toggleSection('${monthId}-self', event)">
           <span>Self Expenses</span>
@@ -405,7 +413,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
 
   const d = new Date(date + "T00:00:00");
   const monthName = d.toLocaleString("default", { month: "long", year: "numeric" });
-  const section = person === "Main" ? "main" : "self";
+  const section = (person === "Home" || person === "Main") ? "home" : "self";
   
   menuOpenForId = null;
   renderExpenses(monthName, section);
@@ -425,7 +433,7 @@ function editExpense(id){
   document.getElementById("amount").value = exp.amount;
   document.getElementById("date").value = exp.date;
   document.getElementById("date").classList.add("has-value");
-  document.getElementById("person").value = exp.person;
+  document.getElementById("person").value = (exp.person === "Main") ? "Home" : exp.person;
   document.getElementById("paymentType").value = exp.paymentType || "Money";
   document.getElementById("note").value = exp.note || "";
   
@@ -463,7 +471,7 @@ async function deleteMonth(month){
 
   const mId = month.replace(/\s/g, "");
   openSectionIds.delete(mId);
-  openSectionIds.delete(mId + "-main");
+  openSectionIds.delete(mId + "-home");
   openSectionIds.delete(mId + "-self");
 
   renderExpenses();
@@ -529,7 +537,7 @@ function expandAll() {
   Object.keys(grouped).forEach(month => {
     const mId = month.replace(/\s/g,"");
     openSectionIds.add(mId);
-    openSectionIds.add(mId + "-main");
+    openSectionIds.add(mId + "-home");
     openSectionIds.add(mId + "-self");
   });
   renderExpenses();

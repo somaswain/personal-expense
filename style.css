@@ -568,9 +568,11 @@ input[type="date"].has-value { color: var(--text-primary); }
 
 /* ── Global Controls ── */
 .global-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 14px;
+  width: 100%;
 }
 
 .control-btn {
@@ -584,6 +586,8 @@ input[type="date"].has-value { color: var(--text-primary); }
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
+  width: 100%;
+  text-align: center;
 }
 
 .control-btn:hover {
