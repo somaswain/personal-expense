@@ -1,4 +1,3 @@
-
 function deleteMonthBtn(month){
   return `
     <button
@@ -16,17 +15,109 @@ function parseMonthYear(monthString){
   return new Date(Number(year), monthIndex, 1);
 }
 
-// ── State ──
-let expenses       = JSON.parse(localStorage.getItem("expenses"))  || [];
-let salaries       = JSON.parse(localStorage.getItem("salaries"))  || {};
+// ── State Cache ──
+let expenses       = [];
+let salaries       = {};
 let editingId      = null;
 let formOpen       = false;
 let menuOpenForId  = null;
-let openSectionIds = new Set(); // FIXED: Keeps track of open sections across renders
+let openSectionIds = new Set(); 
 
-// ── Persistence ──
-function saveExpenses(){ localStorage.setItem("expenses", JSON.stringify(expenses)); }
-function saveSalaries(){ localStorage.setItem("salaries", JSON.stringify(salaries)); }
+// ── IndexedDB Database Core Architecture ──
+const DB_NAME = "ExpenseTrackerDB";
+const DB_VERSION = 1;
+let db;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const dbInstance = event.target.result;
+      if (!dbInstance.objectStoreNames.contains("expenses")) {
+        dbInstance.createObjectStore("expenses", { keyPath: "id" });
+      }
+      if (!dbInstance.objectStoreNames.contains("salaries")) {
+        dbInstance.createObjectStore("salaries", { keyPath: "month" });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve(db);
+    };
+
+    request.onerror = (event) => {
+      reject("IndexedDB failed to initialize: " + event.target.errorCode);
+    };
+  });
+}
+
+// Seamless baseline transition from Legacy localStorage data
+async function migrateFromLocalStorage() {
+  const legacyExpenses = localStorage.getItem("expenses");
+  const legacySalaries = localStorage.getItem("salaries");
+
+  if (legacyExpenses || legacySalaries) {
+    const parsedExpenses = JSON.parse(legacyExpenses) || [];
+    const parsedSalaries = JSON.parse(legacySalaries) || {};
+
+    const tx = db.transaction(["expenses", "salaries"], "readwrite");
+    const expStore = tx.objectStore("expenses");
+    const salStore = tx.objectStore("salaries");
+
+    parsedExpenses.forEach(exp => expStore.put(exp));
+    Object.keys(parsedSalaries).forEach(month => {
+      salStore.put({ month, amount: parsedSalaries[month] });
+    });
+
+    await new Promise((resolve) => tx.oncomplete = resolve);
+
+    localStorage.removeItem("expenses");
+    localStorage.removeItem("salaries");
+    console.log("Successfully migrated legacy data to IndexedDB.");
+  }
+}
+
+function loadDataFromDB() {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(["expenses", "salaries"], "readonly");
+    const expenseStore = transaction.objectStore("expenses");
+    const salaryStore = transaction.objectStore("salaries");
+
+    const getAllExpenses = expenseStore.getAll();
+    const getAllSalaries = salaryStore.getAll();
+
+    transaction.oncomplete = () => {
+      expenses = getAllExpenses.result || [];
+      salaries = {};
+      if (getAllSalaries.result) {
+        getAllSalaries.result.forEach(item => {
+          salaries[item.month] = item.amount;
+        });
+      }
+      resolve();
+    };
+
+    transaction.onerror = () => reject("Error pulling runtime state data from DB.");
+  });
+}
+
+function putExpenseInDB(expense) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("expenses", "readwrite");
+    tx.objectStore("expenses").put(expense);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+function deleteExpenseFromDB(id) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("expenses", "readwrite");
+    tx.objectStore("expenses").delete(id);
+    tx.oncomplete = () => resolve();
+  });
+}
 
 // ── Toggle Add Expense form ──
 function toggleAddExpense(){
@@ -49,15 +140,16 @@ function showToast(){
 
 // ── Date input colour ──
 const dateInput = document.getElementById("date");
-dateInput.addEventListener("change", () => {
-  dateInput.classList.toggle("has-value", !!dateInput.value);
-});
+if(dateInput) {
+  dateInput.addEventListener("change", () => {
+    dateInput.classList.toggle("has-value", !!dateInput.value);
+  });
+}
 
 // ── Group & sort months ──
 function groupByMonth(data){
   const g = {};
   
-  // Initialize any months that have a salary attached so they remain visible even if empty
   Object.keys(salaries).forEach(month => {
     g[month] = [];
   });
@@ -89,30 +181,38 @@ function fmt(dateStr){
 function createTable(data){
   if(!data.length) return `<p class="no-expenses">No expenses yet</p>`;
 
-  const rows = data.map(e => `
-    <tr id="row-${e.id}">
-      <td class="td-amount">₹${Number(e.amount).toLocaleString()}</td>
-      <td class="td-date">${fmt(e.date)}</td>
-      <td class="td-note" title="${e.note || ''}">${e.note || '—'}</td>
-      <td class="td-options">
-        <button class="options-trigger" onclick="toggleMenu('${e.id}', this, event)" aria-label="Options">⋯</button>
-      </td>
-    </tr>
-    <tr id="menu-row-${e.id}" class="${menuOpenForId === e.id ? '' : 'hidden'}">
-      <td colspan="4" class="inline-menu-cell">
-        <div class="inline-menu">
-          <button class="opt-edit" onclick="editExpense('${e.id}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-          </button>
-          <button class="opt-delete" onclick="deleteExpense('${e.id}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-            Delete
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join("");
+  const rows = data.map(e => {
+    const isCC = e.paymentType === "CC";
+    const rowClass = isCC ? "row-cc" : "";
+    const amountText = isCC 
+      ? `₹${Number(e.amount).toLocaleString()} (CC)` 
+      : `₹${Number(e.amount).toLocaleString()}`;
+
+    return `
+      <tr id="row-${e.id}" class="${rowClass}">
+        <td class="td-amount">${amountText}</td>
+        <td class="td-date">${fmt(e.date)}</td>
+        <td class="td-note" title="${e.note || ''}">${e.note || '—'}</td>
+        <td class="td-options">
+          <button class="options-trigger" onclick="toggleMenu('${e.id}', this, event)" aria-label="Options">⋯</button>
+        </td>
+      </tr>
+      <tr id="menu-row-${e.id}" class="${menuOpenForId === e.id ? '' : 'hidden'}">
+        <td colspan="4" class="inline-menu-cell">
+          <div class="inline-menu">
+            <button class="opt-edit" onclick="editExpense('${e.id}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+            <button class="opt-delete" onclick="deleteExpense('${e.id}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
 
   return `
     <table class="expense-table">
@@ -158,20 +258,28 @@ function closeSalaryModal(){
   salaryTargetMonth = null;
 }
 
-function saveSalary(){
+function putSalaryInDB(month, amount) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("salaries", "readwrite");
+    tx.objectStore("salaries").put({ month, amount });
+    tx.oncomplete = () => resolve();
+  });
+}
+
+async function saveSalary(){
   const val = parseFloat(document.getElementById("salaryInput").value);
   if(isNaN(val) || val <= 0){ alert("Enter a valid salary."); return; }
   salaries[salaryTargetMonth] = val;
-  saveSalaries();
+  
+  await putSalaryInDB(salaryTargetMonth, val);
   closeSalaryModal();
-  renderExpenses(); // Dropdowns will remain open natively via openSectionIds
+  renderExpenses();
 }
 
 // ── Render ──
 function renderExpenses(autoExpandMonth, autoExpandSection){
   const container = document.getElementById("monthlyContainer");
 
-  // Track the newly added expense expansion so it survives the innerHTML wipe
   if(autoExpandMonth){
     const mId = autoExpandMonth.replace(/\s/g,"");
     openSectionIds.add(mId);
@@ -193,25 +301,19 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
     const selfTotal  = self.reduce((s,e) => s + Number(e.amount), 0);
     const grandTotal = mainTotal + selfTotal;
 
-    const monthId   = month.replace(/\s/g,"");
-    const salary    = salaries[month];
-    const remaining = salary !== undefined ? salary - grandTotal : null;
-    const hasSalary = salary !== undefined;
-
-    // Use our global Set to determine state
+    const monthId = month.replace(/\s/g, "");
     const monthShouldOpen = openSectionIds.has(monthId);
-    const mainOpen        = openSectionIds.has(monthId + "-main");
-    const selfOpen        = openSectionIds.has(monthId + "-self");
+    const mainOpen = openSectionIds.has(monthId + "-main");
+    const selfOpen = openSectionIds.has(monthId + "-self");
 
-    const remainingHTML = remaining !== null ? `
-      <div class="divider"></div>
-      <div class="remaining-row">
-        <span>Salary</span>
-        <span>₹${Number(salary).toLocaleString()}</span>
-      </div>
-      <div class="remaining-row">
+    const hasSalary = salaries[month] !== undefined;
+    const salaryVal = hasSalary ? salaries[month] : 0;
+    const remaining = salaryVal - grandTotal;
+
+    const remainingHTML = hasSalary ? `
+      <div class="total-row remaining-row">
         <span>Remaining</span>
-        <span class="${remaining >= 0 ? 'pos' : 'neg'}">
+        <span class="${remaining < 0 ? 'neg' : 'pos'}">
           ${remaining < 0 ? '−' : ''}₹${Math.abs(remaining).toLocaleString()}
         </span>
       </div>
@@ -219,7 +321,6 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
 
     const card = document.createElement("div");
     card.className = "month-card";
-
     const monthBodyClass = monthShouldOpen ? "" : "hidden";
     const chevText = monthShouldOpen ? "▴" : "▾";
     const chevClass = monthShouldOpen ? "chevron open" : "chevron";
@@ -228,25 +329,20 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
       <div class="month-header" onclick="toggleSection('${monthId}')">
         <div class="month-header-left">
           <span class="month-title">
-            ${month} 
-            ${deleteMonthBtn(month)}
+            ${month} ${deleteMonthBtn(month)}
           </span>
-          <button
-            class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}"
-            onclick="openSalaryModal('${month}', event)">
+          <button class="salary-tag ${hasSalary ? 'salary-tag-set' : 'salary-tag-add'}" onclick="openSalaryModal('${month}', event)">
             ${hasSalary ? '✎ Salary' : '+ Salary'}
           </button>
         </div>
         <span class="${chevClass}" id="chev-${monthId}">${chevText}</span>
       </div>
-
       <div id="${monthId}" class="${monthBodyClass}">
         <div class="summary-block">
           <div class="total-row"><span>Main</span><span>₹${mainTotal.toLocaleString()}</span></div>
           <div class="total-row"><span>Self</span><span>₹${selfTotal.toLocaleString()}</span></div>
           ${remainingHTML}
         </div>
-
         <div class="section-header" onclick="toggleSection('${monthId}-main', event)">
           <span>Main Expenses</span>
           <span class="${mainOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-main">${mainOpen ? '▴' : '▾'}</span>
@@ -254,7 +350,6 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
         <div id="${monthId}-main" class="${mainOpen ? '' : 'hidden'}">
           ${createTable(main)}
         </div>
-
         <div class="section-header" onclick="toggleSection('${monthId}-self', event)">
           <span>Self Expenses</span>
           <span class="${selfOpen ? 'chevron open' : 'chevron'}" id="chev-${monthId}-self">${selfOpen ? '▴' : '▾'}</span>
@@ -264,7 +359,6 @@ function renderExpenses(autoExpandMonth, autoExpandSection){
         </div>
       </div>
     `;
-
     container.appendChild(card);
   });
 }
@@ -274,106 +368,117 @@ function toggleSection(id, event){
   const el = document.getElementById(id);
   if(!el) return;
   
-  const nowHidden = el.classList.toggle("hidden");
-  
-  const chev = document.getElementById("chev-" + id);
-  if(chev){
-    chev.textContent = nowHidden ? "▾" : "▴";
-    chev.classList.toggle("open", !nowHidden);
-  }
-
-  // Record state to persist across renders
-  if(nowHidden){
+  if(openSectionIds.has(id)){
     openSectionIds.delete(id);
+    el.classList.add("hidden");
+    const chev = document.getElementById("chev-" + id);
+    if(chev) { chev.textContent = "▾"; chev.classList.remove("open"); }
   } else {
     openSectionIds.add(id);
+    el.classList.remove("hidden");
+    const chev = document.getElementById("chev-" + id);
+    if(chev) { chev.textContent = "▴"; chev.classList.add("open"); }
   }
 }
 
-// ── CRUD ──
-function deleteExpense(id){
-  menuOpenForId = null;
-  expenses = expenses.filter(e => e.id !== id);
-  saveExpenses();
-  renderExpenses(); // Dropdowns stay open since state is saved
-}
-
-function editExpense(id){
-  menuOpenForId = null;
-  const e = expenses.find(x => x.id === id);
-  if(!e) return;
-  editingId = id;
-
-  document.getElementById("amount").value   = e.amount;
-  document.getElementById("person").value   = e.person;
-  document.getElementById("category").value = e.category;
-  document.getElementById("note").value     = e.note || "";
-  document.getElementById("date").value     = e.date;
-  dateInput.classList.add("has-value");
-
-  const fc = document.getElementById("expenseFormContainer");
-  fc.classList.remove("hidden");
-  formOpen = true;
-  document.getElementById("addBtnIcon").textContent = "−";
-  document.getElementById("addExpenseBtn").style.borderRadius = "16px 16px 0 0";
-
-  window.scrollTo({ top:0, behavior:"smooth" });
-}
-
-document.getElementById("expenseForm").addEventListener("submit", (e) => {
+// ── Submit Form ──
+document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const amount = parseFloat(document.getElementById("amount").value);
+  const date = document.getElementById("date").value;
+  const person = document.getElementById("person").value;
+  const paymentType = document.getElementById("paymentType").value;
+  const note = document.getElementById("note").value.trim();
 
-  const personVal = document.getElementById("person").value;
-  const dateVal   = document.getElementById("date").value;
-
-  const data = {
-    id:       editingId || Date.now().toString(),
-    amount:   document.getElementById("amount").value,
-    person:   personVal,
-    category: document.getElementById("category").value,
-    note:     document.getElementById("note").value,
-    date:     dateVal
-  };
-
-  const isNew = !editingId;
-
-  if(editingId){
-    expenses = expenses.map(x => x.id === editingId ? data : x);
+  let entry;
+  if(editingId) {
+    entry = { id: editingId, amount, date, person, paymentType, note };
+    expenses = expenses.map(exp => exp.id === editingId ? entry : exp);
     editingId = null;
+    document.querySelector(".save-btn").textContent = "Save Expense";
   } else {
-    expenses.push(data);
+    entry = { id: Date.now().toString(), amount, date, person, paymentType, note };
+    expenses.push(entry);
   }
 
-  saveExpenses();
+  await putExpenseInDB(entry);
 
-  const d         = new Date(dateVal + "T00:00:00");
-  const monthName = d.toLocaleString("default", { month:"long", year:"numeric" });
-  const section   = personVal === "Main" ? "main" : "self";
-
+  const d = new Date(date + "T00:00:00");
+  const monthName = d.toLocaleString("default", { month: "long", year: "numeric" });
+  const section = person === "Main" ? "main" : "self";
+  
   menuOpenForId = null;
   renderExpenses(monthName, section);
-
   e.target.reset();
   dateInput.classList.remove("has-value");
-
-  if(isNew) showToast();
-
+  showToast();
   document.getElementById("expenseFormContainer").classList.add("hidden");
   formOpen = false;
   document.getElementById("addBtnIcon").textContent = "+";
   document.getElementById("addExpenseBtn").style.borderRadius = "16px";
 });
 
-// ── Export / Import ──
-function exportData(){
-  const payload = { exportedAt: new Date().toISOString(), expenses, salaries };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `expense-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+function editExpense(id){
+  const exp = expenses.find(e => e.id === id);
+  if(!exp) return;
+  editingId = id;
+  document.getElementById("amount").value = exp.amount;
+  document.getElementById("date").value = exp.date;
+  document.getElementById("date").classList.add("has-value");
+  document.getElementById("person").value = exp.person;
+  document.getElementById("paymentType").value = exp.paymentType || "Money";
+  document.getElementById("note").value = exp.note || "";
+  
+  document.querySelector(".save-btn").textContent = "Update Expense";
+  if(!formOpen) toggleAddExpense();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteExpense(id){
+  if(!confirm("Delete this expense?")) return;
+  expenses = expenses.filter(e => e.id !== id);
+  
+  await deleteExpenseFromDB(id);
+  renderExpenses();
+}
+
+async function deleteMonth(month){
+  const confirmDelete = confirm(`Delete all expenses for ${month}?`);
+  if(!confirmDelete) return;
+
+  const recordsToRemove = expenses.filter(exp => {
+    const expDate = new Date(exp.date + "T00:00:00");
+    const expMonth = expDate.toLocaleString("default", { month:"long", year:"numeric" });
+    return expMonth === month;
+  });
+
+  expenses = expenses.filter(exp => !recordsToRemove.includes(exp));
+  delete salaries[month];
+
+  const tx = db.transaction(["expenses", "salaries"], "readwrite");
+  recordsToRemove.forEach(exp => tx.objectStore("expenses").delete(exp.id));
+  tx.objectStore("salaries").delete(month);
+  
+  await new Promise(resolve => tx.oncomplete = resolve);
+
+  const mId = month.replace(/\s/g, "");
+  openSectionIds.delete(mId);
+  openSectionIds.delete(mId + "-main");
+  openSectionIds.delete(mId + "-self");
+
+  renderExpenses();
+}
+
+// ── Export Backup ──
+function exportData() {
+  const backupObject = { expenses, salaries };
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObject));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `expense_tracker_backup_${Date.now()}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
 }
 
 function triggerImport(){
@@ -384,21 +489,32 @@ function importData(event){
   const file = event.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if(!Array.isArray(data.expenses)){ alert("Invalid backup file."); return; }
-      if(!confirm(`Import ${data.expenses.length} expense(s)?\nMerges with existing data (duplicates skipped).`)) return;
-      const existingIds = new Set(expenses.map(x => x.id));
-      const newOnes = data.expenses.filter(x => !existingIds.has(x.id));
-      expenses = [...expenses, ...newOnes];
+  reader.onload = async function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      let incomingNewExpensesCount = 0;
+      
+      const tx = db.transaction(["expenses", "salaries"], "readwrite");
+      const expStore = tx.objectStore("expenses");
+      const salStore = tx.objectStore("salaries");
+
+      if(data.expenses && Array.isArray(data.expenses)){
+        const existingIds = new Set(expenses.map(x => x.id));
+        const newOnes = data.expenses.filter(x => !existingIds.has(x.id));
+        newOnes.forEach(x => expStore.put(x));
+        expenses = [...expenses, ...newOnes];
+        incomingNewExpensesCount = newOnes.length;
+      }
       if(data.salaries && typeof data.salaries === "object"){
         salaries = { ...salaries, ...data.salaries };
+        Object.keys(data.salaries).forEach(month => {
+          salStore.put({ month, amount: data.salaries[month] });
+        });
       }
-      saveExpenses();
-      saveSalaries();
+      
+      await new Promise(resolve => tx.oncomplete = resolve);
       renderExpenses();
-      alert(`✅ Imported ${newOnes.length} new expense(s)!`);
+      alert(`✅ Imported ${incomingNewExpensesCount} new expense(s)!`);
     } catch(err){
       alert("Failed to read file. Make sure it's a valid backup JSON.");
     }
@@ -424,32 +540,9 @@ function collapseAll() {
   renderExpenses();
 }
 
-function deleteMonth(month){
-  const confirmDelete = confirm(`Delete all expenses for ${month}?`);
-
-  if(!confirmDelete) return;
-
-  expenses = expenses.filter(exp => {
-    const expDate = new Date(exp.date + "T00:00:00");
-    const expMonth = expDate.toLocaleString("default", {
-      month:"long",
-      year:"numeric"
-    });
-    return expMonth !== month;
-  });
-
-  delete salaries[month];
-  localStorage.setItem("expenses", JSON.stringify(expenses));
-  localStorage.setItem("salaries", JSON.stringify(salaries));
-
-  // Purge deleted month from open tracking set
-  const mId = month.replace(/\s/g,"");
-  openSectionIds.delete(mId);
-  openSectionIds.delete(mId + "-main");
-  openSectionIds.delete(mId + "-self");
-
-  renderExpenses();
-}
-
-// ── Init ──
-renderExpenses();
+// ── Initialization Hook Pipeline ──
+initDB()
+  .then(() => migrateFromLocalStorage())
+  .then(() => loadDataFromDB())
+  .then(() => renderExpenses())
+  .catch(err => console.error("Critical architecture initialization failed: ", err));
